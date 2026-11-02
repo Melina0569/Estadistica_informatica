@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DATAUNMSM · Consultas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/frontend/js/tailwind-config.js"></script>
+  <link rel="stylesheet" href="/frontend/css/styles.css"/>
+  <link rel="stylesheet" href="/frontend/css/components.css"/>
+  <link rel="stylesheet" href="/frontend/css/dashboard.css"/>
+  <link rel="stylesheet" href="/frontend/css/consultas.css"/>
+</head>
+<body class="consulta-page bg-background font-body-md text-body-md text-on-surface antialiased">
+  <div id="sidebar"></div>
+  <div class="pl-64">
+    <div id="header"></div>
+    <main class="w-full pt-16 min-h-screen px-space-xl py-space-lg">
+      <div class="w-full space-y-space-xl">
+        <section class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container/60 p-space-xl">
+          <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Consultas institucionales del padrón</h1>
+          <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">
+            Buscador y consulta detallada de información consolidada por módulo.
+          </p>
+          <p id="consulta-carga" class="font-label-sm text-label-sm text-secondary mt-space-sm">
+            Todos los registros cargados
+          </p>
+          <nav class="consulta-modulos" aria-label="Módulos de consulta">
+            <a class="consulta-modulo is-active" data-modulo="estudiantes" href="/frontend/paginas/consultas/index.html">
+              <img src="/frontend/assets/icons/Estudiante.png"
+                    alt="" class="consulta-icono-modulo">
+              <strong>Estudiantes</strong><small>44,585</small>
+            </a>
+            <a class="consulta-modulo" data-modulo="docentes" href="/frontend/paginas/docentes/index.html">
+              <img src="/frontend/assets/icons/Docente.png"
+                    alt="" class="consulta-icono-modulo">
+              <strong>Docentes</strong><small>3,120</small>
+            </a>
+            <a class="consulta-modulo" data-modulo="administrativos" href="/frontend/paginas/administrativos/index.html">
+              <img src="/frontend/assets/icons/Administrativo.png"
+                    alt="" class="consulta-icono-modulo">
+              <strong>Personal administrativo</strong><small>1,450</small>
+            </a>
+            <a class="consulta-modulo" data-modulo="egresados" href="/frontend/paginas/egresados/index.html">
+              <img src="/frontend/assets/icons/Egresado_titulado.png"
+                      alt="" class="consulta-icono-modulo">
+              <strong>Egresados y titulados</strong><small>64,900</small>
+            </a>
+          </nav>
+          <form id="consulta-form" class="consulta-filtros">
+            <label class="consulta-busqueda">
+              <span class="sr-only">Buscar</span>
+              <img src="/frontend/assets/icons/Buscar.png"
+                    alt="" class="consulta-icono-buscar">
+              <input id="consulta-q" type="search" placeholder="Código, DNI o nombre..." autocomplete="off"/>
+              <button class="consulta-button" type="submit">
+                  Consultar
+                  <img src="/frontend/assets/icons/Buscar.png"
+                      alt="" class="consulta-icono-boton">
+              </button>
+            </label>
+            <label class="consulta-select">
+              <span>Facultad académica</span>
+              <select id="consulta-facultad"></select>
+            </label>
+            <label class="consulta-select">
+              <span>Estado de matrícula</span>
+              <select id="consulta-estado"></select>
+            </label>
+            <label class="consulta-select">
+              <span>Condición del estudiante</span>
+              <select id="consulta-condicion"></select>
+            </label>
+            <label class="consulta-select">
+              <span>Semestre de ingreso</span>
+              <select id="consulta-periodo"></select>
+            </label>
+            <label class="consulta-select consulta-programa">
+              <span>Programa académico</span>
+              <select id="consulta-programa"></select>
+            </label>
+            <div class="consulta-acciones">
+              <span id="consulta-filtro-resumen">Filtros activos: ninguno</span>
+              <button id="consulta-limpiar" class="consulta-link-button" type="button">Limpiar filtros</button>
+              <button class="consulta-button consulta-aplicar" type="submit">Aplicar criterios</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container/60 overflow-hidden">
+          <div class="p-space-lg flex items-center justify-between border-b border-surface-container/60">
+            <div>
+              <h2 class="font-headline-sm text-headline-sm text-primary font-bold">Resultados de estudiantes</h2>
+              <p id="consulta-contador" class="font-body-sm text-body-sm text-on-surface-variant"></p>
+            </div>
+            <img
+                    src="/frontend/assets/icons/Imagen.png"
+                    alt=""
+                    class="consulta-icono-imagen"
+                >
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+                  <th class="py-space-xs px-space-md">Imagen</th>
+                  <th class="py-space-xs px-space-md">Código</th>
+                  <th class="py-space-xs px-space-md">Estudiante</th>
+                  <th class="py-space-xs px-space-md">DNI</th>
+                  <th class="py-space-xs px-space-md">Correo institucional</th>
+                  <th class="py-space-xs px-space-md text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="consulta-tbody" class="divide-y divide-surface-container/40 text-body-sm"></tbody>
+            </table>
+          </div>
+          <div class="p-space-md flex items-center justify-between bg-surface-container-low/70">
+            <button id="consulta-anterior" class="consulta-page-button" type="button">Anterior</button>
+            <span id="consulta-pagina" class="font-label-sm text-label-sm text-outline"></span>
+            <button id="consulta-siguiente" class="consulta-page-button" type="button">Siguiente</button>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="/frontend/js/api.js"></script>
+  <script src="/frontend/js/app.js"></script>
+  <script src="/frontend/js/consultas.js"></script>
+</body>
+</html>

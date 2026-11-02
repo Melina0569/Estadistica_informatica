@@ -1,0 +1,61 @@
+/* Base global */
+html, body { margin: 0; padding: 0; }
+body { overscroll-behavior: none; }
+main > :first-child { margin-top: 0 !important; }
+main > :last-child  { margin-bottom: 0 !important; }
+::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Iconos 3D de las tarjetas de indicadores */
+.icono-kpi {
+    width: 38px;
+    height: 38px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+
+    /* Profundidad y volumen */
+    filter: drop-shadow(0 3px 3px rgba(15, 35, 70, 0.22));
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+/* Efecto al pasar el cursor */
+.metric-card:hover .icono-kpi {
+    transform: translateY(-2px) scale(1.08);
+    filter: drop-shadow(0 5px 5px rgba(15, 35, 70, 0.28));
+}
+
+.icono-ui {
+    display: block;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.icono-tarjeta {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+
+    /* Efecto de profundidad 3D */
+    filter: drop-shadow(0 2px 2px rgba(15, 35, 70, 0.20));
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+/* Efecto al pasar el cursor */
+.operation-card:hover .icono-tarjeta {
+    transform: translateY(-2px) scale(1.06);
+    filter: drop-shadow(0 4px 4px rgba(15, 35, 70, 0.25));
+}

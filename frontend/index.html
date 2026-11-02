@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DATAUNMSM · Panel de Inicio</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind-config.js"></script>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+</head>
+<body class="dashboard-page bg-background font-body-md text-body-md text-on-surface antialiased">
+
+  <div id="sidebar"></div>
+
+  <div class="pl-64">
+    <div id="header"></div>
+
+    <main class="w-full pt-16 bg-background min-h-screen px-space-xl py-space-lg">
+      <div class="w-full space-y-space-xl">
+
+        <!-- Banner -->
+        <section class="relative overflow-hidden rounded-xl bg-surface-container-lowest p-space-xl shadow-md border border-surface-container/60 animate-fade-in-up">
+          <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+            <div class="space-y-space-xs max-w-3xl">
+              <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Bienvenido(a).</h1>
+              <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Panel de control y resumen diario de recepción y carga de información de la base de datos.</p>
+            </div>
+              <a href="/frontend/paginas/carga/index.html"
+                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-label-md text-label-md px-4 py-2 rounded-lg shadow-sm transition-all duration-200">
+
+                  <img
+                      src="assets/icons/CargarExcel.png"
+                      alt=""
+                      style="width: 24px; height: 24px; object-fit: contain;"
+                  >
+
+                  <span>Cargar archivo Excel</span>
+              </a>
+          </div>
+        </section>
+
+        <!-- KPIs (se llenan desde la API) -->
+        <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-md">
+
+          <!-- Planillas subidas hoy -->
+          <div class="metric-card bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60">
+            <div class="flex justify-between items-start">
+              <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                Planillas subidas hoy
+              </span>
+              <img
+                src="assets/icons/ArchivosProcesados.png"
+                alt=""
+                class="icono-kpi"
+              >
+            </div>
+
+            <div class="flex items-baseline gap-space-xs mt-space-2xs">
+              <span id="kpi-archivos" class="font-headline-xl text-headline-xl text-primary font-bold">—</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">archivos</span>
+            </div>
+
+            <div class="mt-space-md p-space-xs bg-surface-container-low rounded-lg flex justify-between font-label-sm text-label-sm">
+              <span class="text-tertiary-container font-semibold">
+                <span id="kpi-validadas">—</span> validadas
+              </span>
+              <span class="text-error font-semibold">
+                <span id="kpi-observadas">—</span> con observaciones
+              </span>
+            </div>
+          </div>
+
+          <!-- Registros procesados -->
+          <div class="metric-card bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60">
+            <div class="flex justify-between items-start">
+              <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                Registros procesados
+              </span>
+              <img
+                src="assets/icons/BaseDatos.png"
+                alt=""
+                class="icono-kpi"
+              >
+            </div>
+
+            <div class="flex items-baseline gap-space-xs mt-space-2xs">
+              <span id="kpi-registros" class="font-headline-xl text-headline-xl text-primary font-bold">—</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">filas</span>
+            </div>
+
+            <p class="mt-space-md font-body-sm text-body-sm text-on-surface-variant">
+              Procesados en la jornada actual
+            </p>
+          </div>
+
+          <!-- Inconsistencias detectadas -->
+          <div class="metric-card bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60">
+            <div class="flex justify-between items-start">
+              <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">
+                Inconsistencias detectadas
+              </span>
+              <img
+                src="assets/icons/Advertencia.png"
+                alt=""
+                class="icono-kpi"
+              >
+            </div>
+
+            <div class="flex items-baseline gap-space-xs mt-space-2xs">
+              <span id="kpi-inconsistencias" class="font-headline-xl text-headline-xl text-error font-bold">—</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant">pendientes</span>
+            </div>
+
+            <a href="/frontend/paginas/correcciones/index.html"
+              class="inline-flex items-center gap-space-2xs mt-space-md font-label-sm text-label-sm text-secondary font-semibold hover:underline">
+              Revisar inconsistencias
+              <span class="material-symbols-outlined text-sm">arrow_forward</span>
+            </a>
+          </div>
+
+        </section>
+
+        <!-- Operaciones -->
+        <section class="space-y-space-sm">
+          <div>
+            <h2 class="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">Operaciones</h2>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">Rutas prioritarias para la carga, revisión y reportes</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+            <div class="operation-card bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60">
+              <div class="operation-icon w-10 h-10 flex items-center justify-center mb-space-sm">
+                  <img
+                      src="assets/icons/Excel.png"
+                      alt=""
+                      class="icono-ui icono-tarjeta"
+                  >
+              </div>
+              <h3 class="font-label-md text-label-md text-primary font-bold">Subir nueva planilla Excel</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">Elija el tipo de planilla a cargar:</p>
+              <div class="grid grid-cols-2 gap-space-xs mt-space-md">
+                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="estudiantes">Estudiantes</a>
+                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="docentes">Docentes</a>
+                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="administrativos">Administrativos</a>
+                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="egresados">Egresados</a>
+              </div>
+            </div>
+
+            <a href="/frontend/paginas/indicadores/index.html" class="operation-card bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60">
+              <div class="operation-icon w-10 h-10 flex items-center justify-center mb-space-sm">
+                  <img
+                      src="assets/icons/RevisarInconsistencias.png"
+                      alt=""
+                      class="icono-ui icono-tarjeta"
+                  >
+              </div>
+              <h3 class="font-label-md text-label-md text-primary font-bold">Revisar observaciones</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">Revise registros con datos inválidos, duplicados o códigos incorrectos.</p>
+            </a>
+
+            <a href="/frontend/paginas/consultas/index.html" class="operation-card bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60">
+              <div class="operation-icon w-10 h-10 flex items-center justify-center mb-space-sm">
+                  <img
+                      src="assets/icons/Buscar.png"
+                      alt=""
+                      class="icono-ui icono-tarjeta"
+                  >
+              </div>
+              <h3 class="font-label-md text-label-md text-primary font-bold">Consultar registros</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">Busque por código institucional, programa o periodo.</p>
+            </a>
+
+            <a href="/frontend/paginas/indicadores/index.html" class="operation-card bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60">
+              <div class="operation-icon w-10 h-10 flex items-center justify-center mb-space-sm">
+                  <img
+                      src="assets/icons/IndicadoresReportes.png"
+                      alt=""
+                      class="icono-ui icono-tarjeta"
+                  >
+              </div>
+              <h3 class="font-label-md text-label-md text-primary font-bold">Indicadores y reportes</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">Genere consolidados y métricas a partir de los datos cargados.</p>
+            </a>
+
+            <button id="reiniciar-base-datos-btn" type="button" class="operation-card operation-card-danger bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container/60 text-left">
+              <div class="operation-icon w-10 h-10 flex items-center justify-center mb-space-sm">
+                  <img
+                      src="assets/icons/Eliminar.png"
+                      alt=""
+                      class="icono-ui icono-tarjeta"
+                  >
+              </div>
+              <h3 class="font-label-md text-label-md text-error font-bold">Reiniciar base de datos</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">Borra todos los registros y el historial de cargas. Use esta opción solo para comenzar de cero.</p>
+            </button>
+          </div>
+        </section>
+
+        <!-- Tabla (se llena desde la API) -->
+        <section class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container/60 overflow-hidden">
+          <div class="p-space-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-md bg-surface-container-low/50 border-b border-surface-container/60">
+            <div>
+              <h2 class="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">Últimos archivos Excel subidos</h2>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Recepciones recientes y estado de integración</p>
+            </div>
+            <div class="flex items-center gap-space-xs">
+              <div class="relative">
+                <span class="material-symbols-outlined absolute left-space-xs top-1/2 -translate-y-1/2 text-outline text-lg pointer-events-none">search</span>
+                <input id="table-search-input" type="text" placeholder="Filtrar por archivo o facultad..." class="pl-7 pr-space-sm py-1.5 text-body-sm font-body-sm bg-surface-container-lowest rounded-lg border border-surface-container-high w-56 focus:outline-none focus:ring-2 focus:ring-secondary/30"/>
+              </div>
+              <button id="refresh-grid-btn" type="button" title="Actualizar" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant">
+                <span id="refresh-icon" class="material-symbols-outlined text-lg block">refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table id="excel-files-table" class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider h-9">
+                  <th class="py-space-xs px-space-md">Archivo Excel</th>
+                  <th class="py-space-xs px-space-md">Tipo</th>
+                  <th class="py-space-xs px-space-md">Dependencia / Facultad</th>
+                  <th class="py-space-xs px-space-md">Subido por</th>
+                  <th class="py-space-xs px-space-md">Hora</th>
+                  <th class="py-space-xs px-space-md">Estado</th>
+                  <th class="py-space-xs px-space-md text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="files-tbody" class="divide-y divide-surface-container/40 text-body-sm font-body-sm text-on-surface"></tbody>
+            </table>
+          </div>
+
+          <div class="p-space-md bg-surface-container-low/70 flex items-center justify-between font-label-sm text-label-sm">
+            <span id="rows-count-indicator" class="text-outline"></span>
+            <a href="/frontend/paginas/carga/index.html" class="text-secondary font-semibold hover:underline">Ver historial de cargas</a>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <div id="footer"></div>
+  </div>
+
+  <div id="eliminacion-progreso" class="eliminacion-progreso" hidden aria-live="polite">
+    <div class="eliminacion-progreso-card" role="dialog" aria-modal="true" aria-labelledby="eliminacion-titulo">
+      <span class="material-symbols-outlined eliminacion-progreso-icon">delete_sweep</span>
+      <h2 id="eliminacion-titulo">Eliminando carga</h2>
+      <p id="eliminacion-detalle">
+        Revirtiendo cambios y comprobando registros compartidos.
+      </p>
+      <div class="eliminacion-progreso-heading">
+        <span>Procesando en PostgreSQL</span>
+        <strong id="eliminacion-porcentaje">8%</strong>
+      </div>
+      <div
+        class="eliminacion-progreso-track"
+        role="progressbar"
+        aria-label="Progreso de eliminación"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="8"
+      >
+        <div id="eliminacion-barra" class="eliminacion-progreso-bar"></div>
+      </div>
+      <small>No cierres esta ventana mientras termina la operación.</small>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

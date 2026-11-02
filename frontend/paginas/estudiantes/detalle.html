@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DATAUNMSM · Detalle del estudiante</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/frontend/js/tailwind-config.js"></script>
+  <link rel="stylesheet" href="/frontend/css/styles.css"/>
+  <link rel="stylesheet" href="/frontend/css/components.css"/>
+  <link rel="stylesheet" href="/frontend/css/dashboard.css"/>
+  <link rel="stylesheet" href="/frontend/css/consultas.css"/>
+</head>
+<body class="bg-background font-body-md text-body-md text-on-surface antialiased">
+  <div id="sidebar"></div>
+  <div class="pl-64">
+    <div id="header"></div>
+    <main class="w-full pt-16 min-h-screen px-space-xl py-space-lg">
+      <div class="w-full space-y-space-xl">
+          <a href="/frontend/paginas/consultas/index.html"
+            class="detalle-volver">
+
+            <img
+              src="/frontend/assets/icons/Inicio.png"
+              alt=""
+              class="detalle-volver-icono"
+            >
+
+            <span>Volver a Consultas</span>
+          </a>
+        <section id="estudiante-detalle" class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container/60 p-space-xl">
+          Consultando información...
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="/frontend/js/api.js"></script>
+  <script src="/frontend/js/app.js"></script>
+  <script src="/frontend/js/estudiante-detalle.js"></script>
+</body>
+</html>

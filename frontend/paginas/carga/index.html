@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DATAUNMSM · Carga de planillas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/frontend/js/tailwind-config.js"></script>
+  <link rel="stylesheet" href="/frontend/css/styles.css">
+  <link rel="stylesheet" href="/frontend/css/components.css">
+  <link rel="stylesheet" href="/frontend/css/carga.css">
+</head>
+<body class="carga-page bg-background font-body-md text-body-md text-on-surface antialiased">
+  <div id="sidebar"></div>
+
+  <div class="pl-64">
+    <div id="header"></div>
+
+    <main class="carga-main">
+      <div class="carga-shell">
+        <section class="carga-heading">
+          <div>
+            <span class="carga-eyebrow">Gestión de datos</span>
+            <h1 class="font-headline-xl text-headline-xl text-primary">Carga y validación de planillas Excel</h1>
+            <p class="font-body-md text-body-md text-on-surface-variant">
+              Selecciona el tipo de planilla y valida el archivo antes de incorporarlo a PostgreSQL.
+            </p>
+          </div>
+          <a class="carga-history-link" href="/frontend/index.html">
+            <img src="/frontend/assets/icons/Inicio.png"
+                  alt="" class="icono-pagina">
+            Volver al panel
+          </a>
+        </section>
+
+        <section class="carga-card">
+          <div class="carga-card-heading">
+            <div>
+              <h2 class="font-headline-sm text-headline-sm text-primary">1. Tipo de planilla</h2>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Elige el módulo que corresponde al archivo.</p>
+            </div>
+            <span id="tipo-planilla-label" class="carga-status carga-status-neutral">Estudiantes</span>
+          </div>
+
+          <div id="entity-selector-group" class="carga-entity-grid">
+            <button class="carga-entity-card is-selected" type="button" data-tipo="estudiantes" aria-pressed="true">
+              <img src="/frontend/assets/icons/Estudiante.png"
+                  alt="" class="icono-tipo">
+              <span>
+                <strong>Estudiantes</strong>
+                <small>Admisión, matrícula e información personal</small>
+              </span>
+              <span class="material-symbols-outlined carga-check">check_circle</span>
+            </button>
+            <button class="carga-entity-card" type="button" data-tipo="docentes" aria-pressed="false">
+              <img src="/frontend/assets/icons/Docente.png"
+                    alt="" class="icono-tipo">
+              <span>
+                <strong>Docentes</strong>
+                <small>Disponible cuando exista su ruta de importación</small>
+              </span>
+              <span class="carga-coming">No disponible</span>
+            </button>
+            <button class="carga-entity-card" type="button" data-tipo="administrativos" aria-pressed="false">
+              <img src="/frontend/assets/icons/Administrativo.png"
+                   alt="" class="icono-tipo">
+              <span>
+                <strong>Administrativos</strong>
+                <small>Disponible cuando exista su ruta de importación</small>
+              </span>
+              <span class="carga-coming">No disponible</span>
+            </button>
+            <button class="carga-entity-card" type="button" data-tipo="egresados" aria-pressed="false">
+              <img src="/frontend/assets/icons/Egresado_titulado.png"
+                    alt="" class="icono-tipo">
+              <span>
+                <strong>Egresados</strong>
+                <small>Disponible cuando exista su ruta de importación</small>
+              </span>
+              <span class="carga-coming">No disponible</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="carga-card">
+          <div class="carga-card-heading">
+            <div>
+              <h2 class="font-headline-sm text-headline-sm text-primary">2. Seleccionar archivo</h2>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Formatos aceptados por el backend: .xlsx y .xls.</p>
+            </div>
+            <span class="carga-limit">Máximo recomendado: 50 MB</span>
+          </div>
+
+          <form id="carga-form">
+            <label id="drop-zone" class="carga-drop-zone" for="archivo">
+              <input id="archivo" name="archivo" type="file" accept=".xlsx,.xls" required>
+              <img
+                      src="/frontend/assets/icons/CargarExcel.png"
+                      alt=""
+                      class="carga-upload-icon-img"
+                  >
+              <strong id="drop-title">Arrastra un archivo aquí o explora tu equipo</strong>
+              <span id="drop-description">La validación se ejecutará antes de guardar cualquier registro.</span>
+              <span class="carga-browse">Seleccionar archivo</span>
+              <span id="file-name" class="carga-file-name" hidden></span>
+            </label>
+
+            <div class="carga-actions">
+              <button id="analizar-btn" class="carga-button carga-button-primary" type="submit">
+                <img src="/frontend/assets/icons/RevisarObservaciones.png"
+                      alt="" class="icono-boton">
+                Analizar archivo
+              </button>
+              <button id="confirmar-btn" class="carga-button carga-button-secondary" type="button" disabled>
+                <img
+                        src="/frontend/assets/icons/AgregarTabla.png"
+                        alt=""
+                        class="icono-boton"
+                    >
+                Confirmar carga
+              </button>
+                  <button id="limpiar-btn" class="carga-button carga-button-ghost" type="button">
+                      <img
+                          src="/frontend/assets/icons/Cerrar.png"
+                          alt=""
+                          class="icono-boton"
+                      >
+                      Limpiar
+                  </button>
+            </div>
+
+            <div id="progreso-carga" class="carga-progress" hidden aria-live="polite">
+              <div class="carga-progress-heading">
+                <span id="progreso-titulo">Procesando archivo...</span>
+                <strong id="progreso-porcentaje">0%</strong>
+              </div>
+              <div
+                class="carga-progress-track"
+                role="progressbar"
+                aria-label="Progreso de la operación"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              >
+                <div id="progreso-barra" class="carga-progress-bar"></div>
+              </div>
+              <p id="progreso-detalle" class="carga-progress-detail">
+                El servidor está validando la información.
+              </p>
+            </div>
+          </form>
+        </section>
+
+        <section id="resultado-panel" class="carga-card carga-results">
+          <div class="carga-card-heading">
+            <div>
+              <h2 class="font-headline-sm text-headline-sm text-primary">Resultado de la validación</h2>
+              <p id="resultado-resumen" class="font-body-sm text-body-sm text-on-surface-variant"></p>
+            </div>
+            <span id="resultado-estado" class="carga-status"></span>
+          </div>
+
+          <div id="archivo-resumen" class="carga-file-summary" hidden></div>
+          <div id="resultado-mensaje" class="carga-message" role="status"></div>
+          <section id="vista-previa" class="carga-preview">
+            <div class="carga-subsection-heading">
+              <div>
+                <h3 class="font-headline-sm text-headline-sm text-primary">
+                  Vista previa de datos del archivo
+                </h3>
+                <p id="vista-previa-resumen" class="font-body-sm text-body-sm text-on-surface-variant">
+                  Analiza un archivo para consultar sus primeras filas.
+                </p>
+              </div>
+              <span id="vista-previa-paginacion" class="carga-preview-page"></span>
+            </div>
+            <div class="carga-table-wrap">
+              <table class="carga-preview-table">
+                <thead>
+                  <tr>
+                    <th>Fila</th>
+                    <th>Cód. alumno</th>
+                    <th>DNI / documento</th>
+                    <th>Apellidos y nombres</th>
+                    <th>Facultad / programa</th>
+                    <th>Ciclo</th>
+                    <th>Modalidad ingreso</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="vista-previa-filas">
+                  <tr>
+                    <td colspan="8">La vista previa aparecerá después del análisis.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="modulo-inconsistencias" class="carga-observaciones">
+            <div class="carga-subsection-heading">
+              <div>
+                <h3 class="font-headline-sm text-headline-sm text-primary">
+                  Inconsistencias y observaciones detectadas
+                </h3>
+                <p id="inconsistencias-resumen" class="font-body-sm text-body-sm text-on-surface-variant">
+                  El resultado de validación se mostrará aquí.
+                </p>
+              </div>
+              <div class="carga-issues-actions">
+                <span id="inconsistencias-casos" class="carga-status carga-status-error"></span>
+                <a
+                  id="ir-correcciones"
+                  class="carga-correcciones-link"
+                  href="/frontend/paginas/correcciones/index.html"
+                  hidden
+                >
+                  <img
+                          src="/frontend/assets/icons/Correcciones.png"
+                          alt=""
+                          class="icono-boton"
+                      >
+                      Ir a Correcciones
+                </a>
+              </div>
+            </div>
+            <div id="inconsistencias" class="carga-issues">
+              <div class="carga-message">
+                Aún no se han detectado inconsistencias porque no se ha analizado un archivo.
+              </div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+
+    <div id="footer"></div>
+  </div>
+
+  <script src="/frontend/js/api.js"></script>
+  <script src="/frontend/js/app.js"></script>
+  <script src="/frontend/js/carga.js"></script>
+</body>
+</html>

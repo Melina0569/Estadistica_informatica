@@ -1,0 +1,299 @@
+.consulta-input {
+  display: block;
+  width: 100%;
+  margin-top: .35rem;
+  padding: .65rem .75rem;
+  border: 1px solid #d8e2f0;
+  border-radius: .5rem;
+  background: #fff;
+  color: #091426;
+  outline: none;
+}
+
+.consulta-modulos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  margin-top: 1rem;
+  padding: .35rem;
+  border-radius: .5rem;
+  background: #f1f5ff;
+}
+
+.consulta-modulo {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .55rem .75rem;
+  border-radius: .4rem;
+  color: #26364e;
+  font-size: .72rem;
+  text-decoration: none;
+}
+
+.consulta-modulo span { font-size: 1rem; }
+.consulta-modulo small { color: #52647c; font-family: "JetBrains Mono", monospace; }
+.consulta-modulo.is-active { background: #091426; color: #fff; }
+.consulta-modulo.is-active small { color: #dce9ff; }
+
+.consulta-filtros {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .55rem;
+  margin-top: 1rem;
+  padding: .75rem;
+  border: 1px solid #e1e8f4;
+  border-radius: .5rem;
+}
+
+.consulta-busqueda {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: .5rem;
+  border: 1px solid #d8e2f0;
+  border-radius: .4rem;
+  padding-left: .65rem;
+  color: #52647c;
+}
+
+.consulta-busqueda input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  padding: .65rem 0;
+  outline: 0;
+}
+
+.consulta-select {
+  display: block;
+  min-width: 0;
+  padding: .45rem .55rem;
+  background: #f1f5ff;
+  color: #52647c;
+  font-size: .62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.consulta-select input,
+.consulta-select select {
+  display: block;
+  width: 100%;
+  margin-top: .25rem;
+  border: 0;
+  background: transparent;
+  color: #26364e;
+  font-size: .72rem;
+  outline: 0;
+}
+
+.consulta-programa { grid-column: span 2; }
+.consulta-acciones {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .75rem;
+  color: #52647c;
+  font-size: .68rem;
+}
+.consulta-link-button { border: 0; background: transparent; color: #0058be; cursor: pointer; }
+.consulta-aplicar { padding: .5rem .75rem; }
+
+@media (max-width: 800px) {
+  .consulta-filtros { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .consulta-programa { grid-column: span 1; }
+}
+
+@media (max-width: 520px) {
+  .consulta-filtros { grid-template-columns: 1fr; }
+  .consulta-programa { grid-column: span 1; }
+  .consulta-acciones { align-items: flex-start; flex-direction: column; }
+}
+
+.consulta-input:focus {
+  border-color: #0058be;
+  box-shadow: 0 0 0 3px rgba(0, 88, 190, .12);
+}
+
+.consulta-button,
+.consulta-page-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  border: 0;
+  border-radius: .5rem;
+  padding: .65rem 1rem;
+  background: #091426;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.consulta-page-button {
+  padding: .45rem .8rem;
+  background: #e5eeff;
+  color: #091426;
+}
+
+.consulta-button:hover,
+.consulta-page-button:hover:not(:disabled) {
+  background: #0058be;
+}
+
+.consulta-page-button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.consulta-imagen {
+  color: #0058be;
+  font-size: 1.75rem;
+}
+.consulta-page {
+  background: radial-gradient(circle at 78% 6%,rgba(83,190,239,.16),transparent 25%),linear-gradient(135deg,#f4faff,#edf6ff 50%,#f9fcff);
+  font-family: "Manrope", sans-serif;
+}
+.consulta-page main > div > section {
+  position: relative;
+  overflow: hidden;
+  border-color: #dceaf6;
+  background: linear-gradient(145deg,rgba(255,255,255,.98),rgba(243,249,255,.92));
+  box-shadow: 0 10px 24px rgba(9,50,90,.1),inset 0 1px 0 rgba(255,255,255,.9);
+}
+.consulta-page main > div > section::before {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  content: "";
+  border-radius: 1rem 1rem 0 0;
+  background: linear-gradient(90deg,#08a5df,#1765eb,#8bceef);
+  background-size: 200% 100%;
+  animation: consulta-accent-flow 6s ease-in-out infinite;
+}
+.consulta-modulos {
+  background: linear-gradient(100deg,#e7f2ff,#f5f9ff);
+  box-shadow: 0 5px 14px rgba(39,83,132,.08);
+}
+.consulta-modulo {
+  transition: transform .25s ease,box-shadow .25s ease,background .25s ease;
+}
+.consulta-modulo:hover,.consulta-modulo.is-active {
+  background: linear-gradient(135deg,#08a5df,#1765eb);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 15px rgba(0,112,220,.24);
+}
+.consulta-modulo.is-active small,.consulta-modulo:hover small { color:#dff5ff; }
+.consulta-filtros,.consulta-busqueda {
+  border-color: #d7e8f6;
+  background: rgba(247,251,255,.8);
+}
+.consulta-select { background: linear-gradient(135deg,#edf6ff,#fff); border: 1px solid #dceaf6; border-radius: .55rem; }
+.consulta-input:focus,.consulta-busqueda:focus-within { border-color:#159bdb; box-shadow:0 0 0 3px rgba(21,155,219,.14); }
+.consulta-button {
+  background: linear-gradient(135deg,#08a5df,#1765eb);
+  box-shadow: 0 7px 15px rgba(0,112,220,.24);
+}
+.consulta-button:hover { background: linear-gradient(135deg,#12b9ec,#284bea); }
+@keyframes consulta-accent-flow { 0%,100% { background-position:0 50%; } 50% { background-position:100% 50%; } }
+
+/* Iconos de módulos */
+.consulta-icono-modulo {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: transparent;
+    filter: drop-shadow(0 2px 2px rgba(15, 35, 70, 0.18));
+}
+
+/* Icono del buscador */
+.consulta-icono-buscar {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+/* Iconos dentro de botones */
+.consulta-icono-boton {
+    width: 19px;
+    height: 19px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+/* Icono de imagen en resultados */
+.consulta-icono-imagen {
+    width: 27px;
+    height: 27px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(15, 35, 70, 0.18));
+}
+
+/* Imagen predeterminada del estudiante */
+.consulta-imagen {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    display: block;
+    background: transparent;
+    filter: drop-shadow(0 2px 3px rgba(15, 35, 70, 0.18));
+}
+
+/* Icono 3D de la ficha del estudiante */
+.detalle-icono-estudiante {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+    background: transparent;
+    filter: drop-shadow(0 3px 4px rgba(15, 35, 70, 0.20));
+}
+
+/* Botón Volver a Consultas */
+.detalle-volver {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    width: fit-content;
+    padding: 7px 12px;
+
+    background: #eaf1ff;
+    color: #0754b8;
+
+    border-radius: 8px;
+    text-decoration: none;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    transition: all 0.2s ease;
+}
+
+/* Icono del botón */
+.detalle-volver-icono {
+    display: block;
+    width: 22px;
+    height: 22px;
+    max-width: 22px;
+    max-height: 22px;
+
+    object-fit: contain;
+    flex-shrink: 0;
+
+    background: transparent;
+    filter: drop-shadow(0 2px 3px rgba(0, 40, 100, 0.20));
+}
+
+/* Efecto al pasar el mouse */
+.detalle-volver:hover {
+    background: #dce9ff;
+    transform: translateY(-2px);
+}

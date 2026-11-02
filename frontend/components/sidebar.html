@@ -1,0 +1,138 @@
+<aside class="sidebar-shell fixed left-0 top-0 h-full w-64 z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+
+  <div class="flex flex-col">
+
+    <!-- Identidad de DATAUNMSM -->
+    <div class="sidebar-brand">
+      <img
+          src="/frontend/assets/icons/unmsm_logo.png"
+          alt="Escudo de la Universidad Nacional Mayor de San Marcos"
+          class="sidebar-brand-logo"
+      >
+      <div class="sidebar-brand-title">
+          DATA<span>UNMSM</span>
+      </div>
+    </div>
+
+    <!-- Título del menú -->
+    <div class="px-space-md pt-space-lg pb-space-sm">
+        <span class="sidebar-section-title">
+            MÓDULOS PRINCIPALES
+        </span>
+    </div>
+
+    <!-- Navegación -->
+    <nav class="flex flex-col gap-space-2xs px-space-sm">
+
+      <a
+        class="nav-link"
+        data-path="/frontend/index.html"
+        href="/frontend/index.html"
+      >
+        <img src="/frontend/assets/icons/Inicio.png"
+            alt="" class="icono-sidebar">
+        <span>Panel de inicio</span>
+      </a>
+
+      <a
+        class="nav-link"
+        data-path="/frontend/paginas/carga/"
+        href="/frontend/paginas/carga/index.html"
+      >
+        <img src="/frontend/assets/icons/CargarExcel.png"
+          alt="" class="icono-sidebar">
+        <span>Carga de planillas</span>
+      </a>
+
+      <a
+        class="nav-link"
+        data-path="/frontend/paginas/indicadores/"
+        href="/frontend/paginas/indicadores/index.html"
+      >
+        <img src="/frontend/assets/icons/IndicadoresReportes.png"
+            alt="" class="icono-sidebar">
+        <span>Indicadores y reportes</span>
+      </a>
+
+      <a
+        class="nav-link"
+        data-path="/frontend/paginas/consultas/"
+        href="/frontend/paginas/consultas/index.html"
+      >
+        <img src="/frontend/assets/icons/Buscar.png"
+            alt="" class="icono-sidebar">
+        <span>Consultas</span>
+      </a>
+
+      <a
+        class="nav-link"
+        data-path="/frontend/paginas/correcciones/"
+        href="/frontend/paginas/correcciones/index.html"
+      >
+        <img src="/frontend/assets/icons/Correcciones.png"
+            alt="" class="icono-sidebar">
+        <span>Correcciones</span>
+      </a>
+
+    </nav>
+            <!-- Logotipo centrado debajo del menú -->
+    <div class="sidebar-logo-center">
+        <img
+            src="/frontend/assets/icons/Icono_web.png"
+            alt="Logotipo DATAUNMSM"
+            class="sidebar-logo-image"
+        >
+    </div>
+  </div>
+
+  <!-- Periodo académico -->
+  <div class="p-space-md m-space-sm bg-surface-container-lowest rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] border border-surface-container/60">
+
+    <span class="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
+      Periodo académico
+    </span>
+
+    <button
+      id="periodo-actual"
+      type="button"
+      class="border-0 bg-transparent p-0 cursor-pointer font-data-mono text-data-mono text-primary font-bold mt-space-2xs"
+      title="Haz clic para configurar el periodo académico"
+    >
+      —
+    </button>
+    <button
+      id="configurar-periodo"
+      type="button"
+      class="block mt-space-xs font-label-sm text-label-sm text-secondary hover:underline"
+    >
+      Configurar periodo
+    </button>
+
+  </div>
+
+  <div id="periodo-modal" class="periodo-modal" hidden>
+    <div class="periodo-modal-backdrop" data-cerrar-periodo></div>
+    <section class="periodo-dialog" role="dialog" aria-modal="true" aria-labelledby="periodo-dialog-title">
+      <button id="cerrar-periodo" class="periodo-close" type="button" aria-label="Cerrar">×</button>
+      <img src="/frontend/assets/icons/Calendario.png"
+          alt=""
+          class="periodo-dialog-icon-img">
+      <h2 id="periodo-dialog-title">Configurar periodo académico</h2>
+      <p>Selecciona el periodo que se utilizará en los módulos del sistema.</p>
+      <div class="periodo-preview">
+        <span>Periodo seleccionado</span>
+        <strong id="periodo-preview-valor">2026-2</strong>
+      </div>
+      <div class="periodo-fields">
+        <label>Año<select id="periodo-anio"></select></label>
+        <label>Semestre<select id="periodo-semestre"><option value="1">Primer semestre</option><option value="2">Segundo semestre</option></select></label>
+      </div>
+      <div id="periodo-error" class="periodo-error" role="alert" hidden></div>
+      <div class="periodo-actions">
+        <button id="cancelar-periodo" class="periodo-button secondary" type="button">Cancelar</button>
+        <button id="guardar-periodo" class="periodo-button primary" type="button">Guardar periodo</button>
+      </div>
+    </section>
+  </div>
+
+</aside>

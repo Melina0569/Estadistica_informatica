@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DATAUNMSM · Indicadores y Reportes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/frontend/js/tailwind-config.js"></script>
+  <link rel="stylesheet" href="/frontend/css/styles.css"/>
+  <link rel="stylesheet" href="/frontend/css/components.css"/>
+  <link rel="stylesheet" href="/frontend/css/indicadores.css"/>
+</head>
+<body class="indicadores-page bg-background font-body-md text-body-md text-on-surface antialiased">
+  <div id="sidebar"></div>
+  <div class="pl-64">
+    <div id="header"></div>
+    <main class="indicadores-main">
+      <div class="indicadores-heading">
+        <div><span class="eyebrow">Análisis institucional</span><h1>Indicadores y reportes</h1><p>Consolidados y métricas calculados con los registros cargados.</p></div>
+        <button id="actualizar-indicadores" class="indicator-button" type="button">
+            <img src="/frontend/assets/icons/Actualizar.png"
+                alt="" class="icono-indicador">
+            Actualizar indicadores
+        </button>
+      </div>
+      <nav class="indicator-tabs" aria-label="Módulos">
+        <button class="indicator-tab is-active" data-modulo="estudiantes" type="button"><img src="/frontend/assets/icons/Estudiante.png" alt="" class="icono-modulo"> Estudiantes <strong id="modulo-estudiantes">0</strong></button>
+        <button class="indicator-tab" data-modulo="docentes" type="button"><img src="/frontend/assets/icons/Docente.png" alt="" class="icono-modulo"> Docentes <strong id="modulo-docentes">0</strong></button>
+        <button class="indicator-tab" data-modulo="administrativos" type="button"><img src="/frontend/assets/icons/Administrativo.png" alt="" class="icono-modulo"> Personal administrativo <strong id="modulo-administrativos">0</strong></button>
+        <button class="indicator-tab" data-modulo="egresados_titulados" type="button"><img src="/frontend/assets/icons/Egresado_titulado.png" alt="" class="icono-modulo"> Egresados y titulados <strong id="modulo-egresados_titulados">0</strong></button>
+      </nav>
+      <section class="indicator-filters">
+        <label>Facultad<select id="filtro-facultad"><option value="">Todas las facultades</option></select></label>
+        <label>Periodo de ingreso<select id="filtro-periodo"><option value="">Todos los periodos</option></select></label>
+        <button id="limpiar-indicadores" class="indicator-button secondary" type="button">Limpiar filtros</button>
+      </section>
+      <section class="kpi-grid">
+        <article class="kpi-card">
+          <span>Estudiantes analizados</span>
+          <img src="/frontend/assets/icons/Estudiante.png" alt="" class="kpi-icon">
+          <strong id="kpi-estudiantes">0</strong>
+          <small>Registros disponibles</small>
+        </article>
+        <article class="kpi-card">
+          <span>Ingresos académicos</span>
+          <img src="/frontend/assets/icons/Registros.png" alt="" class="kpi-icon">
+          <strong id="kpi-ingresos">0</strong>
+          <small>Ingresos registrados</small>
+        </article>
+        <article class="kpi-card">
+          <span>Matrículas</span>
+          <img src="/frontend/assets/icons/Calendario.png" alt="" class="kpi-icon">
+          <strong id="kpi-matriculas">0</strong>
+          <small>Periodos matriculados</small>
+        </article>
+        <article class="kpi-card">
+          <span>Tasa de observaciones</span>
+          <img src="/frontend/assets/icons/Advertencia.png" alt="" class="kpi-icon">
+          <strong id="kpi-observaciones">0%</strong>
+          <small id="kpi-observaciones-total">0 incidencias</small>
+        </article>
+      </section>
+      <section class="indicator-grid">
+        <article class="indicator-card wide"><div class="card-heading"><div><h2>Estudiantes por facultad</h2><p>Distribución con ingreso registrado.</p></div></div><div id="facultades-chart" class="bars"></div></article>
+        <article class="indicator-card beca-card"><div class="card-heading"><div><h2>Distribución por beca</h2><p>Condición de beneficio registrada.</p></div><img src="/frontend/assets/icons/Exito.png" alt="" class="card-heading-icon"></div><div id="becas-list" class="legend-list"></div></article>
+        <article class="indicator-card wide"><div class="card-heading"><div><h2>Ingresos por periodo</h2><p>Estudiantes según periodo de ingreso.</p></div></div><div id="periodos-chart" class="bars compact"></div></article>
+      </section>
+      <section class="builder-card">
+        <div class="card-heading"><div><h2>Constructor de tablas e indicadores a medida</h2><p>Genere un resumen agrupado o un reporte detallado con columnas y filtros propios.</p></div><span class="status-pill">Módulo activo</span></div>
+        <div class="builder-controls">
+          <label>Tipo de reporte<select id="builder-tipo"><option value="resumen">Resumen agrupado</option><option value="detalle">Detalle por registro</option></select></label>
+          <label>Dimensión<select id="builder-dimension"><option value="facultad">Facultad</option><option value="programa">Programa</option><option value="carrera">Carrera / especialidad</option><option value="genero">Género</option><option value="periodo">Periodo de ingreso</option><option value="beca">Beca</option></select></label>
+          <label>Métrica<select id="builder-metrica"><option value="total">Conteo de estudiantes</option><option value="participacion">Participación porcentual</option></select></label>
+          <label>Tipo de gráfico<select id="builder-grafico"><option value="barras">Barras</option><option value="circular">Circular</option><option value="lineas">Líneas</option></select></label>
+          <label>Filtrar facultad<select id="builder-facultad"><option value="">Todas</option></select></label>
+          <label>Filtrar programa<select id="builder-programa"><option value="">Todos</option></select></label>
+          <label>Filtrar carrera<select id="builder-carrera"><option value="">Todas</option></select></label>
+          <label>Filtrar género<select id="builder-genero"><option value="">Todos</option></select></label>
+          <label>Filtrar beca<select id="builder-beca"><option value="">Todas</option></select></label>
+          <label>Filtrar periodo<select id="builder-periodo"><option value="">Todos</option></select></label>
+          <label>Modalidad de estudio<select id="builder-modalidad"><option value="">Todas</option></select></label>
+          <label>Nivel<select id="builder-nivel"><option value="">Todos</option></select></label>
+          <label>Ciclo / año de estudios<select id="builder-ciclo"><option value="">Todos</option></select></label>
+          <label class="builder-search">Búsqueda libre<input id="builder-buscar" type="search" placeholder="Código, DNI o nombre"/></label>
+          <fieldset id="columnas-reporte" class="report-columns"><legend>Columnas del detalle</legend>
+            <label><input type="checkbox" value="codigo" checked/> Código</label>
+            <label><input type="checkbox" value="dni"/> DNI</label>
+            <label><input type="checkbox" value="apellidos" checked/> Apellidos</label>
+            <label><input type="checkbox" value="nombres" checked/> Nombres</label>
+            <label><input type="checkbox" value="genero" checked/> Género</label>
+            <label><input type="checkbox" value="facultad" checked/> Facultad</label>
+            <label><input type="checkbox" value="programa" checked/> Programa</label>
+            <label><input type="checkbox" value="carrera" checked/> Carrera</label>
+            <label><input type="checkbox" value="periodo" checked/> Periodo</label>
+            <label><input type="checkbox" value="beca"/> Beca</label>
+            <label><input type="checkbox" value="modalidad_ingreso"/> Modalidad ingreso</label>
+            <label><input type="checkbox" value="modalidad_estudio"/> Modalidad estudio</label>
+            <label><input type="checkbox" value="nivel"/> Nivel</label>
+            <label><input type="checkbox" value="ciclo"/> Ciclo</label>
+            <label><input type="checkbox" value="periodo_matricula"/> Periodo matrícula</label>
+            <label><input type="checkbox" value="permanencia"/> Permanencia</label>
+            <label><input type="checkbox" value="promedio"/> Promedio</label>
+            <label><input type="checkbox" value="ranking"/> Ranking</label>
+          </fieldset>
+          <button id="generar-indicador" class="indicator-button" type="button">Generar tabla</button>
+          <button id="exportar-indicador" class="indicator-button secondary" type="button"><img src="/frontend/assets/icons/ExportarExcel.png" alt="" class="icono-indicador"> Exportar Excel</button>
+        </div>
+        <div id="indicador-mensaje" class="indicator-message" role="status" aria-live="polite"></div>
+        <section id="grafico-indicador" class="generated-chart" hidden>
+          <div class="chart-heading"><h3>Visualización del reporte</h3><button id="descargar-grafico" class="indicator-button secondary" type="button"><img src="/frontend/assets/icons/Imagen.png" alt="" class="icono-indicador"> Descargar PNG</button></div>
+          <div class="chart-scroll"><canvas id="canvas-indicador" aria-label="Gráfico del indicador"></canvas><div id="grafico-tooltip" class="chart-tooltip" role="status"></div></div>
+          <div class="chart-legend-heading">Detalle de categorías</div>
+          <div id="leyenda-grafico" class="chart-legend" aria-label="Leyenda del gráfico"></div>
+        </section>
+        <div id="tabla-indicador" class="generated-table" hidden></div>
+      </section>
+    </main>
+  </div>
+  <script src="/frontend/js/api.js"></script><script src="/frontend/js/app.js"></script><script src="/frontend/js/indicadores.js"></script>
+</body>
+</html>
