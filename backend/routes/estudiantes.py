@@ -1800,29 +1800,50 @@ def _procesar_fila(fila):
         periodo_ingreso=periodo_ingreso,
     ).first()
 
+    datos_ingreso = {
+        "tipo_preparacion": convertir_none(
+            fila["Tipo de preparación"]
+        ),
+        "modalidad_ingreso": convertir_none(
+            fila["Modalidad de ingreso"]
+        ),
+        "id_prog": programa.id_prog,
+        "id_especialidad": especialidad.id_especialidad
+        if especialidad else None,
+        "id_sede": sede.id_sede
+        if sede else None,
+    }
+
     ingreso = obtener_o_crear(
         Ingreso,
         filtros={
             "id_codigo_alumno": estudiante.id_codigo_alumno,
             "periodo_ingreso": periodo_ingreso,
         },
-        extra={
-            "tipo_preparacion": convertir_none(
-                fila["Tipo de preparación"]
-            ),
-            "modalidad_ingreso": convertir_none(
-                fila["Modalidad de ingreso"]
-            ),
-            "id_prog": programa.id_prog,
-            "id_especialidad": especialidad.id_especialidad
-            if especialidad else None,
-            "id_sede": sede.id_sede
-            if sede else None,
-        },
+        extra=datos_ingreso,
         cambios=cambios,
     )
 
-    if ingreso_existente is None:
+    if ingreso_existente is not None:
+        valores_anteriores_ingreso = _snapshot_modelo(ingreso)
+        for campo, valor in datos_ingreso.items():
+            setattr(ingreso, campo, valor)
+        db.session.flush()
+        valores_nuevos_ingreso = _snapshot_modelo(ingreso)
+        if valores_anteriores_ingreso != valores_nuevos_ingreso:
+            cambios.append({
+                "tabla": Ingreso.__tablename__,
+                "clave_registro": str(ingreso.id_ingreso),
+                "operacion": "modificado",
+                "valores_anteriores": valores_anteriores_ingreso,
+                "valores_nuevos": valores_nuevos_ingreso,
+            })
+
+    if ingreso_existente is None and not any(
+        cambio["tabla"] == Ingreso.__tablename__
+        and cambio["clave_registro"] == str(ingreso.id_ingreso)
+        for cambio in cambios
+    ):
         cambios.append({
             "tabla": Ingreso.__tablename__,
             "clave_registro": str(ingreso.id_ingreso),
@@ -1887,41 +1908,22 @@ def _procesar_fila(fila):
         periodo_mat=periodo_mat
     ).all()
 
-    # ---------------------------------------------------------
-    # Comprobar si ya existe una matrícula EXACTAMENTE igual
-    # ---------------------------------------------------------
-    matricula_igual = None
-
-    for matricula_existente in matriculas_existentes:
-
-        datos_iguales = all(
-            getattr(matricula_existente, campo) == valor
-            for campo, valor in datos_matricula.items()
-        )
-
-        if datos_iguales:
-            matricula_igual = matricula_existente
-            break
-
-    # ---------------------------------------------------------
-    # Si ya existe exactamente la misma fila:
-    # NO crear otra
-    # ---------------------------------------------------------
-    if matricula_igual is not None:
-
-        print(
-            "Matrícula duplicada exactamente. "
-            "No se crea otro registro:",
-            ingreso.id_ingreso,
-            periodo_mat
-        )
-
-    # ---------------------------------------------------------
-    # Si existe la misma combinación pero los datos son diferentes:
-    # CREAR una nueva matrícula
-    # ---------------------------------------------------------
+    if matriculas_existentes:
+        for matricula in matriculas_existentes:
+            valores_anteriores_matricula = _snapshot_modelo(matricula)
+            for campo, valor in datos_matricula.items():
+                setattr(matricula, campo, valor)
+            db.session.flush()
+            valores_nuevos_matricula = _snapshot_modelo(matricula)
+            if valores_anteriores_matricula != valores_nuevos_matricula:
+                cambios.append({
+                    "tabla": Matricula.__tablename__,
+                    "clave_registro": str(matricula.id_matricula),
+                    "operacion": "modificado",
+                    "valores_anteriores": valores_anteriores_matricula,
+                    "valores_nuevos": valores_nuevos_matricula,
+                })
     else:
-
         matricula = Matricula(
             id_ingreso=ingreso.id_ingreso,
             periodo_mat=periodo_mat,
