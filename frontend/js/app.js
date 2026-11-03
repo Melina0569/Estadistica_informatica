@@ -117,6 +117,54 @@ function iniciarReloj() {
   setInterval(tick, 30000);
 }
 
+function iniciarCarruselTiposPlanilla() {
+  const carrusel = document.querySelector(".dashboard-upload-carousel");
+  const viewport = carrusel?.querySelector(".dashboard-upload-viewport");
+  const track = carrusel?.querySelector(".dashboard-upload-track");
+  const controles = carrusel?.querySelectorAll("[data-dashboard-carousel-direction]");
+  if (!carrusel || !viewport || !track || !controles?.length) return;
+
+  let indice = 0;
+  let intervalo = null;
+
+  const actualizar = () => {
+    const tarjetas = track.querySelectorAll(".filter-pill");
+    const visibles = window.innerWidth <= 420 ? 1 : 2;
+    const maximo = Math.max(0, tarjetas.length - visibles);
+    indice = indice > maximo ? 0 : indice;
+    const ancho = tarjetas[0]?.getBoundingClientRect().width || 0;
+    const espacio = tarjetas.length > 1
+      ? tarjetas[1].getBoundingClientRect().left
+        - tarjetas[0].getBoundingClientRect().right
+      : 0;
+    track.style.transform = `translateX(-${Math.round(indice * (ancho + espacio))}px)`;
+  };
+
+  const mover = (direccion) => {
+    const visibles = window.innerWidth <= 420 ? 1 : 2;
+    const maximo = Math.max(0, track.children.length - visibles);
+    indice = direccion > 0
+      ? (indice >= maximo ? 0 : indice + 1)
+      : (indice <= 0 ? maximo : indice - 1);
+    actualizar();
+    iniciar();
+  };
+
+  const iniciar = () => {
+    window.clearInterval(intervalo);
+    intervalo = window.setInterval(() => mover(1), 4500);
+  };
+
+  controles.forEach((control) => {
+    control.addEventListener("click", () => mover(Number(control.dataset.dashboardCarouselDirection)));
+  });
+  window.addEventListener("resize", actualizar);
+  carrusel.addEventListener("mouseenter", () => window.clearInterval(intervalo));
+  carrusel.addEventListener("mouseleave", iniciar);
+  actualizar();
+  iniciar();
+}
+
 // ---------- Dashboard ----------
 const BADGES = {
   completado: {
@@ -231,36 +279,37 @@ function filaArchivo(a) {
     `;
 
   return `
-    <tr class="hover:bg-surface-container-low transition-colors">
-      <td class="py-space-sm px-space-md">
-        <div class="font-data-mono text-data-mono text-primary font-bold">
-          ${esc(a.nombre)}
+    <tr class="dashboard-file-row hover:bg-surface-container-low transition-colors">
+      <td class="dashboard-file-name py-space-sm px-space-md">
+        <div class="dashboard-file-title">
+          <span class="dashboard-file-icon material-symbols-outlined" aria-hidden="true">description</span>
+          <span class="font-data-mono text-data-mono text-primary font-bold">${esc(a.nombre)}</span>
         </div>
-        <div class="font-data-mono-sm text-data-mono-sm text-outline">
+        <div class="dashboard-file-meta font-data-mono-sm text-data-mono-sm text-outline">
           ${num(a.registros)} registros
         </div>
       </td>
 
-      <td class="py-space-sm px-space-md">${esc(a.tipo)}</td>
-      <td class="py-space-sm px-space-md font-medium">${esc(a.dependencia)}</td>
+      <td class="dashboard-file-type py-space-sm px-space-md">${esc(a.tipo)}</td>
+      <td class="dashboard-file-dependency py-space-sm px-space-md font-medium">${esc(a.dependencia)}</td>
 
-      <td class="py-space-sm px-space-md">
+      <td class="dashboard-file-uploader py-space-sm px-space-md">
         <div class="font-medium">${esc(a.subidoPor)}</div>
         <div class="text-outline">${esc(a.cargo)}</div>
       </td>
 
-      <td class="py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-on-surface-variant">
+      <td class="dashboard-file-time py-space-sm px-space-md font-data-mono-sm text-data-mono-sm text-on-surface-variant">
         ${esc(a.hora)}
       </td>
 
-      <td class="py-space-sm px-space-md">
+      <td class="dashboard-file-status py-space-sm px-space-md">
         <span class="badge ${b.clase}">
           <span class="dot"></span>${b.texto}
         </span>
       </td>
 
-      <td class="py-space-sm px-space-md text-right">
-        <div class="flex justify-end gap-space-xs">
+      <td class="dashboard-file-actions py-space-sm px-space-md text-right">
+        <div class="dashboard-file-action-group flex justify-end gap-space-xs">
           ${botonAccion}
           ${botonEliminar}
         </div>
@@ -467,6 +516,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     marcarNavActivo();
     iniciarReloj();
     inicializarPeriodoAcademico();
+    iniciarCarruselTiposPlanilla();
 
     if ($("files-tbody")) {
         $("reiniciar-base-datos-btn")?.addEventListener(

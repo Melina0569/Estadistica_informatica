@@ -15,8 +15,8 @@ main > :last-child  { margin-bottom: 0 !important; }
 
 /* Iconos 3D de las tarjetas de indicadores */
 .icono-kpi {
-    width: 38px;
-    height: 38px;
+    width: 46px;
+    height: 46px;
     object-fit: contain;
     flex-shrink: 0;
     background: transparent;

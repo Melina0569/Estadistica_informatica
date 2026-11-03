@@ -3,7 +3,8 @@ const API = {
 
     async get(ruta) {
         const respuesta = await fetch(
-            `${this.BASE_URL}${ruta}`
+            `${this.BASE_URL}${ruta}`,
+            {cache: "no-store"}
         );
 
         if (!respuesta.ok) {

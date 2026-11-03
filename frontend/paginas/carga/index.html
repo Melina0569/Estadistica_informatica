@@ -31,9 +31,11 @@
             </p>
           </div>
           <a class="carga-history-link" href="/frontend/index.html">
-            <img src="/frontend/assets/icons/Inicio.png"
-                  alt="" class="icono-pagina">
-            Volver al panel
+            <span class="carga-history-icon" aria-hidden="true">
+              <img src="/frontend/assets/icons/Inicio.png" alt="" class="icono-pagina">
+            </span>
+            <span>Volver al panel</span>
+            <span class="material-symbols-outlined carga-history-arrow" aria-hidden="true">arrow_forward</span>
           </a>
         </section>
 
@@ -46,7 +48,12 @@
             <span id="tipo-planilla-label" class="carga-status carga-status-neutral">Estudiantes</span>
           </div>
 
-          <div id="entity-selector-group" class="carga-entity-grid">
+          <div class="carga-carousel">
+            <button class="carga-carousel-control" type="button" data-carousel-direction="-1" aria-label="Tipo anterior">
+              <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+            </button>
+            <div class="carga-carousel-viewport">
+              <div id="entity-selector-group" class="carga-entity-grid">
             <button class="carga-entity-card is-selected" type="button" data-tipo="estudiantes" aria-pressed="true">
               <img src="/frontend/assets/icons/Estudiante.png"
                   alt="" class="icono-tipo">
@@ -82,6 +89,20 @@
                 <small>Disponible cuando exista su ruta de importación</small>
               </span>
               <span class="carga-coming">No disponible</span>
+            </button>
+            <button class="carga-entity-card" type="button" data-tipo="graduados_titulados" aria-pressed="false">
+              <img src="/frontend/assets/icons/Egresado_titulado.png"
+                    alt="" class="icono-tipo">
+              <span>
+                <strong>Graduados y titulados</strong>
+                <small>Disponible cuando exista su ruta de importación</small>
+              </span>
+              <span class="carga-coming">No disponible</span>
+            </button>
+              </div>
+            </div>
+            <button class="carga-carousel-control" type="button" data-carousel-direction="1" aria-label="Tipo siguiente">
+              <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
             </button>
           </div>
         </section>
@@ -161,7 +182,12 @@
               <h2 class="font-headline-sm text-headline-sm text-primary">Resultado de la validación</h2>
               <p id="resultado-resumen" class="font-body-sm text-body-sm text-on-surface-variant"></p>
             </div>
-            <span id="resultado-estado" class="carga-status"></span>
+            <div class="carga-results-actions">
+              <button id="actualizar-analisis-btn" class="carga-button carga-button-ghost" type="button">
+                Actualizar análisis
+              </button>
+              <span id="resultado-estado" class="carga-status"></span>
+            </div>
           </div>
 
           <div id="archivo-resumen" class="carga-file-summary" hidden></div>

@@ -7,6 +7,8 @@ async function cargarCorrecciones() {
   try {
     const [inconsistencias, documentos, auditoria] = await Promise.all([API.getInconsistencias(), API.getDocumentosPendientes(), API.getAuditoriaCorrecciones()]);
     correccion$("total-inconsistencias").textContent = inconsistencias.total.toLocaleString("es-PE");
+    const totalDocumentos = correccion$("total-documentos");
+    if (totalDocumentos) totalDocumentos.textContent = documentos.documentos.length.toLocaleString("es-PE");
     correccion$("resumen-inconsistencias").textContent = `${inconsistencias.tipos} componente(s) requieren revisión.`;
     correccion$("lista-inconsistencias").innerHTML = inconsistencias.inconsistencias.length ? inconsistencias.inconsistencias.map((item, i) => `<button class="issue-row" data-index="${i}"><span><strong>${escCorreccion(item.severidad)} · ${escCorreccion(item.etiqueta)}</strong><small>${escCorreccion(item.cantidad)} registro(s) con este campo pendiente</small></span><span class="issue-count">${escCorreccion(item.cantidad)}</span><span class="material-symbols-outlined">arrow_forward</span></button>`).join("") : "<p class=\"empty-correction\">No se detectaron inconsistencias.</p>";
     correccion$("lista-documentos").innerHTML = documentos.documentos.length ? documentos.documentos.map(item => `<div class="document-row"><div><strong>${escCorreccion(item.tipo_documento)}</strong><small>${escCorreccion(item.codigo_alumno || "Sin código")} · ${escCorreccion(item.responsable || "Sin responsable")}</small></div><span class="status-pill">${escCorreccion(item.estado)}</span></div>`).join("") : "<p class=\"empty-correction\">No hay documentos pendientes.</p>";
@@ -35,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   correccion$("cancelar-correccion")?.addEventListener("click", () => correccion$("correccion-dialog").close());
   correccion$("correccion-dialog")?.addEventListener("click", event => { if (event.target === correccion$("correccion-dialog")) correccion$("correccion-dialog").close(); });
   correccion$("nuevo-documento")?.addEventListener("click", () => correccion$("documento-dialog").showModal());
+  correccion$("cancelar-documento")?.addEventListener("click", () => correccion$("documento-dialog").close());
   correccion$("guardar-documento")?.addEventListener("click", async (event) => { event.preventDefault(); try { await API.crearDocumentoPendiente({ codigo_alumno: correccion$("documento-codigo").value, tipo_documento: correccion$("documento-tipo").value, descripcion: correccion$("documento-descripcion").value, responsable: correccion$("documento-responsable").value }); correccion$("documento-dialog").close(); mostrarCorreccionMensaje("Documento pendiente registrado."); cargarCorrecciones(); } catch (error) { mostrarCorreccionMensaje(error.message, true); } });
   cargarCorrecciones();
 });

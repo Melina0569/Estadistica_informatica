@@ -114,6 +114,8 @@ async function cargarOpcionesConsulta() {
     Number(modulos.administrativos).toLocaleString("es-PE");
   document.querySelector("[data-modulo='egresados'] small").textContent =
     Number(modulos.egresados_titulados).toLocaleString("es-PE");
+  document.querySelector("[data-modulo='graduados_titulados'] small").textContent =
+    Number(modulos.graduados_titulados || 0).toLocaleString("es-PE");
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

@@ -86,27 +86,23 @@
   </div>
 
   <!-- Periodo académico -->
-  <div class="p-space-md m-space-sm bg-surface-container-lowest rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] border border-surface-container/60">
-
-    <span class="font-label-sm text-label-sm uppercase tracking-wide text-on-surface-variant">
-      Periodo académico
-    </span>
-
-    <button
-      id="periodo-actual"
-      type="button"
-      class="border-0 bg-transparent p-0 cursor-pointer font-data-mono text-data-mono text-primary font-bold mt-space-2xs"
-      title="Haz clic para configurar el periodo académico"
-    >
-      —
-    </button>
-    <button
-      id="configurar-periodo"
-      type="button"
-      class="block mt-space-xs font-label-sm text-label-sm text-secondary hover:underline"
-    >
-      Configurar periodo
-    </button>
+  <div class="sidebar-periodo">
+    <div class="sidebar-periodo-icon material-symbols-outlined" aria-hidden="true">calendar_month</div>
+    <div class="sidebar-periodo-content">
+      <span class="sidebar-periodo-label">Periodo académico</span>
+      <button
+        id="periodo-actual"
+        type="button"
+        class="sidebar-periodo-value"
+        title="Haz clic para configurar el periodo académico"
+      >
+        —
+      </button>
+      <button id="configurar-periodo" type="button" class="sidebar-periodo-action">
+        Configurar periodo
+        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+      </button>
+    </div>
 
   </div>
 

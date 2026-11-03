@@ -28,11 +28,18 @@ const progresoPorcentaje = document.getElementById("progreso-porcentaje");
 const progresoBarra = document.getElementById("progreso-barra");
 const progresoDetalle = document.getElementById("progreso-detalle");
 const progresoTrack = progresoCarga.querySelector("[role='progressbar']");
+const actualizarAnalisisBtn = document.getElementById("actualizar-analisis-btn");
+const entitySelectorGroup = document.getElementById("entity-selector-group");
+const carouselViewport = document.querySelector(".carga-carousel-viewport");
+const carouselControls = document.querySelectorAll("[data-carousel-direction]");
 
 let tipoPlanilla = "estudiantes";
 let ultimoReporte = null;
 let progresoIntervalo = null;
 let progresoActual = 0;
+let carruselIndice = 0;
+let carruselIntervalo = null;
+const CLAVE_REPORTE_CARGA = "dataunmsm.ultimoReporteCarga";
 
 function escapar(texto) {
     return String(texto ?? "").replace(
@@ -60,6 +67,44 @@ function mostrarArchivo(archivo) {
     fileName.textContent = `${archivo.name} · ${(archivo.size / 1024 / 1024).toFixed(2)} MB`;
     dropTitle.textContent = "Archivo seleccionado";
     dropDescription.textContent = "Presiona «Analizar archivo» para consultar la validación del backend.";
+}
+
+function guardarReporte(reporte, archivo) {
+    localStorage.setItem(CLAVE_REPORTE_CARGA, JSON.stringify({
+        reporte,
+        archivo: {
+            name: archivo.name,
+            size: archivo.size,
+            lastModified: archivo.lastModified
+        },
+        guardadoEn: new Date().toISOString()
+    }));
+}
+
+function eliminarReporteGuardado() {
+    localStorage.removeItem(CLAVE_REPORTE_CARGA);
+}
+
+function restaurarReporteGuardado() {
+    const guardado = localStorage.getItem(CLAVE_REPORTE_CARGA);
+    if (!guardado) return;
+
+    try {
+        const datos = JSON.parse(guardado);
+        if (!datos.reporte || !datos.archivo?.name) return;
+        ultimoReporte = datos.reporte;
+        mostrarArchivo(datos.archivo);
+        mostrarResultado(
+            datos.reporte,
+            "Análisis restaurado. Selecciona el mismo archivo para confirmar la carga.",
+            datos.reporte.estado === "APTO" ? "ok" : "error"
+        );
+        renderizarReporte(datos.reporte, datos.archivo);
+        confirmarBtn.disabled = true;
+    } catch (error) {
+        console.error("No se pudo restaurar el análisis guardado:", error);
+        eliminarReporteGuardado();
+    }
 }
 
 function limpiarResultado() {
@@ -277,9 +322,67 @@ function seleccionarTipo(boton) {
     tipoPlanillaLabel.textContent = "Estudiantes";
 }
 
+function columnasCarrusel() {
+    if (window.innerWidth <= 640) return 1;
+    if (window.innerWidth <= 900) return 2;
+    return 4;
+}
+
+function actualizarCarrusel() {
+    const tarjetas = entitySelectorGroup.querySelectorAll(".carga-entity-card");
+    const columnas = columnasCarrusel();
+    const maximo = Math.max(0, tarjetas.length - columnas);
+    carruselIndice = carruselIndice > maximo ? 0 : carruselIndice;
+    const primeraTarjeta = tarjetas[0];
+    const anchoTarjeta = primeraTarjeta.getBoundingClientRect().width;
+    const espacio = tarjetas.length > 1
+        ? tarjetas[1].getBoundingClientRect().left
+            - primeraTarjeta.getBoundingClientRect().right
+        : 0;
+    const desplazamiento = Math.round(carruselIndice * (anchoTarjeta + espacio));
+    entitySelectorGroup.style.transform =
+        `translateX(-${desplazamiento}px)`;
+}
+
+function avanzarCarrusel() {
+    const maximo = Math.max(
+        0,
+        entitySelectorGroup.children.length - columnasCarrusel()
+    );
+    carruselIndice = carruselIndice >= maximo ? 0 : carruselIndice + 1;
+    actualizarCarrusel();
+}
+
+function moverCarrusel(direccion) {
+    const maximo = Math.max(
+        0,
+        entitySelectorGroup.children.length - columnasCarrusel()
+    );
+    carruselIndice = direccion > 0
+        ? (carruselIndice >= maximo ? 0 : carruselIndice + 1)
+        : (carruselIndice <= 0 ? maximo : carruselIndice - 1);
+    actualizarCarrusel();
+    iniciarCarrusel();
+}
+
+function iniciarCarrusel() {
+    window.clearInterval(carruselIntervalo);
+    carruselIntervalo = window.setInterval(avanzarCarrusel, 4500);
+}
+
+carouselControls.forEach((control) => {
+    control.addEventListener("click", () => {
+        moverCarrusel(Number(control.dataset.carouselDirection));
+    });
+});
+
 document.querySelectorAll(".carga-entity-card").forEach((boton) => {
     boton.addEventListener("click", () => seleccionarTipo(boton));
 });
+
+window.addEventListener("resize", actualizarCarrusel);
+actualizarCarrusel();
+iniciarCarrusel();
 
 archivoInput.addEventListener("change", () => {
     limpiarResultado();
@@ -347,6 +450,7 @@ cargaForm.addEventListener("submit", async (evento) => {
             apto ? "ok" : "error"
         );
         renderizarReporte(reporte, archivo);
+        guardarReporte(reporte, archivo);
         confirmarBtn.disabled = !apto;
         if (apto) mostrarSerpentinas();
     } catch (error) {
@@ -390,9 +494,24 @@ confirmarBtn.addEventListener("click", async () => {
 
 limpiarBtn.addEventListener("click", () => {
     archivoInput.value = "";
+    eliminarReporteGuardado();
     fileName.hidden = true;
     fileName.textContent = "";
     dropTitle.textContent = "Arrastra un archivo aquí o explora tu equipo";
     dropDescription.textContent = "La validación se ejecutará antes de guardar cualquier registro.";
     limpiarResultado();
 });
+
+actualizarAnalisisBtn.addEventListener("click", () => {
+    if (archivoInput.files[0]) {
+        cargaForm.requestSubmit();
+        return;
+    }
+
+    eliminarReporteGuardado();
+    limpiarResultado();
+    archivoInput.focus();
+});
+
+archivoInput.addEventListener("change", eliminarReporteGuardado);
+restaurarReporteGuardado();

@@ -115,14 +115,14 @@
 .nav-link.active { background: #087aca; color: #fff; box-shadow: 0 1px 2px rgba(0,20,45,.22); }
 .sidebar-shell > div:first-child .text-outline { color: #c9e8f8; }
 
-.header-datetime { display: inline-flex; align-items: center; gap: .7rem; min-height: 2.8rem; padding: .35rem .8rem .35rem .45rem; border: 1px solid #e1eaf5; border-radius: .85rem; background: linear-gradient(135deg, #f8fbff, #eef5ff); color: #123b63; box-shadow: 0 4px 14px rgba(18,59,99,.08); }
+.header-datetime { display: inline-flex; align-items: center; gap: .95rem; min-height: 3.15rem; padding: .48rem 1rem .48rem .65rem; border: 1px solid #cfe2ef; border-radius: .9rem; background: linear-gradient(135deg, #ffffff 0%, #f3f9fd 58%, #eaf5fb 100%); color: #123b63; box-shadow: 0 5px 16px rgba(18,59,99,.1), inset 0 1px 0 rgba(255,255,255,.95); }
 .header-datetime-icon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: .62rem; background: #0058be; color: #fff; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,88,190,.2); }
-.header-datetime-content { display: flex; flex-direction: column; gap: .12rem; min-width: 7.8rem; }
-.header-datetime-label { display: flex; align-items: center; gap: .3rem; color: #71829a; font: 700 .58rem/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
-.header-datetime-date { color: #123b63; font: 700 .75rem/1.1 "JetBrains Mono", monospace; text-transform: capitalize; }
-.header-datetime-divider { width: 1px; height: 1.65rem; background: #cbd9e9; }
-.header-datetime-clock { min-width: 4.8rem; }
-.header-datetime-time { color: #0058be; font: 800 .88rem/1.1 "JetBrains Mono", monospace; letter-spacing: .02em; }
+.header-datetime-content { display: flex; flex-direction: column; gap: .22rem; min-width: 8.4rem; }
+.header-datetime-label { display: flex; align-items: center; gap: .3rem; color: #55748b; font: 700 .58rem/1 Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.header-datetime-date { color: #102f4b; font: 800 .75rem/1.1 "JetBrains Mono", monospace; text-transform: capitalize; }
+.header-datetime-divider { width: 1px; height: 1.9rem; margin: 0 .1rem; background: #bfd5e3; }
+.header-datetime-clock { min-width: 5.2rem; }
+.header-datetime-time { color: #0867ad; font: 800 .9rem/1.1 "JetBrains Mono", monospace; letter-spacing: .02em; }
 .header-live-dot { width: .38rem; height: .38rem; border-radius: 50%; background: #1ca36f; box-shadow: 0 0 0 .2rem rgba(28,163,111,.13); animation: header-live-pulse 2s ease-in-out infinite; }
 @keyframes header-live-pulse { 0%, 100% { opacity: .65; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.1); } }
 @media (max-width: 700px) {
@@ -174,6 +174,93 @@
 .periodo-button.primary:hover { background: #0058be; }
 .periodo-button.secondary { background: #eff4ff; color: #26364e; }
 @keyframes periodo-aparecer { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.sidebar-periodo {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  margin: .55rem;
+  padding: .8rem .75rem;
+  overflow: hidden;
+  border: 1px solid rgba(173, 218, 239, .48);
+  border-radius: .9rem;
+  background: linear-gradient(135deg, #155f89 0%, #0c527d 58%, #08466f 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 7px 16px rgba(0, 25, 65, .24);
+}
+.sidebar-periodo::after {
+  position: absolute;
+  right: -2.2rem;
+  bottom: -3rem;
+  width: 7rem;
+  height: 7rem;
+  content: "";
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(123, 212, 244, .2), transparent 68%);
+  pointer-events: none;
+}
+.sidebar-periodo-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  border: 1px solid rgba(218, 242, 252, .34);
+  border-radius: .62rem;
+  background: rgba(223, 244, 253, .17);
+  color: #f0fbff;
+  font-size: 1.05rem;
+}
+.sidebar-periodo-content {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.sidebar-periodo-label {
+  color: #d6edf7;
+  font: 700 .59rem/1 Inter, sans-serif;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.sidebar-periodo-value {
+  margin-top: .18rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  font: 800 .98rem/1.2 "JetBrains Mono", monospace;
+  letter-spacing: -.02em;
+}
+.sidebar-periodo-value:hover { color: #d9f3ff; }
+.sidebar-periodo-value:focus-visible,
+.sidebar-periodo-action:focus-visible {
+  outline: 2px solid #9de2ff;
+  outline-offset: 3px;
+}
+.sidebar-periodo-action {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  margin-top: .42rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #e0f5fc;
+  cursor: pointer;
+  font: 600 .64rem/1 Inter, sans-serif;
+  transition: color .2s ease, transform .2s ease;
+}
+.sidebar-periodo-action .material-symbols-outlined { font-size: .82rem; }
+.sidebar-periodo-action:hover {
+  color: #fff;
+  transform: translateX(2px);
+}
 
 /* Tarjetas */
 .metric-card, .operation-card {

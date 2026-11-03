@@ -31,17 +31,13 @@
               <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Bienvenido(a).</h1>
               <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">Panel de control y resumen diario de recepción y carga de información de la base de datos.</p>
             </div>
-              <a href="/frontend/paginas/carga/index.html"
-                class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-label-md text-label-md px-4 py-2 rounded-lg shadow-sm transition-all duration-200">
-
-                  <img
-                      src="assets/icons/CargarExcel.png"
-                      alt=""
-                      style="width: 24px; height: 24px; object-fit: contain;"
-                  >
-
-                  <span>Cargar archivo Excel</span>
-              </a>
+            <a href="/frontend/paginas/carga/index.html" class="dashboard-upload-button">
+              <span class="dashboard-upload-icon" aria-hidden="true">
+                <img src="assets/icons/CargarExcel.png" alt="">
+              </span>
+              <span>Cargar archivo Excel</span>
+              <span class="material-symbols-outlined dashboard-upload-arrow" aria-hidden="true">arrow_forward</span>
+            </a>
           </div>
         </section>
 
@@ -143,11 +139,22 @@
               </div>
               <h3 class="font-label-md text-label-md text-primary font-bold">Subir nueva planilla Excel</h3>
               <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">Elija el tipo de planilla a cargar:</p>
-              <div class="grid grid-cols-2 gap-space-xs mt-space-md">
-                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="estudiantes">Estudiantes</a>
-                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="docentes">Docentes</a>
-                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="administrativos">Administrativos</a>
-                <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="egresados">Egresados</a>
+              <div class="dashboard-upload-carousel" aria-label="Tipos de planilla">
+                <button class="dashboard-carousel-control" type="button" data-dashboard-carousel-direction="-1" aria-label="Tipo anterior">
+                  <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+                </button>
+                <div class="dashboard-upload-viewport">
+                  <div class="dashboard-upload-track">
+                    <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="estudiantes">Estudiantes</a>
+                    <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="docentes">Docentes</a>
+                    <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="administrativos">Administrativos</a>
+                    <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="egresados">Egresados</a>
+                    <a class="filter-pill" href="/frontend/paginas/carga/index.html" data-tipo="graduados_titulados">Graduados y titulados</a>
+                  </div>
+                </div>
+                <button class="dashboard-carousel-control" type="button" data-dashboard-carousel-direction="1" aria-label="Tipo siguiente">
+                  <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                </button>
               </div>
             </div>
 
@@ -202,25 +209,26 @@
         </section>
 
         <!-- Tabla (se llena desde la API) -->
-        <section class="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container/60 overflow-hidden">
-          <div class="p-space-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-md bg-surface-container-low/50 border-b border-surface-container/60">
+        <section class="dashboard-files-card bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container/60 overflow-hidden">
+          <div class="dashboard-files-header p-space-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-md bg-surface-container-low/50 border-b border-surface-container/60">
             <div>
+              <span class="dashboard-section-eyebrow">Actividad reciente</span>
               <h2 class="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">Últimos archivos Excel subidos</h2>
               <p class="font-body-sm text-body-sm text-on-surface-variant">Recepciones recientes y estado de integración</p>
             </div>
-            <div class="flex items-center gap-space-xs">
+            <div class="dashboard-files-toolbar flex items-center gap-space-xs">
               <div class="relative">
                 <span class="material-symbols-outlined absolute left-space-xs top-1/2 -translate-y-1/2 text-outline text-lg pointer-events-none">search</span>
-                <input id="table-search-input" type="text" placeholder="Filtrar por archivo o facultad..." class="pl-7 pr-space-sm py-1.5 text-body-sm font-body-sm bg-surface-container-lowest rounded-lg border border-surface-container-high w-56 focus:outline-none focus:ring-2 focus:ring-secondary/30"/>
+                <input id="table-search-input" type="text" placeholder="Filtrar archivos..." aria-label="Filtrar archivos por nombre o facultad" class="dashboard-files-search pl-7 pr-space-sm py-1.5 text-body-sm font-body-sm bg-surface-container-lowest rounded-lg border border-surface-container-high w-56 focus:outline-none focus:ring-2 focus:ring-secondary/30"/>
               </div>
-              <button id="refresh-grid-btn" type="button" title="Actualizar" class="p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant">
+              <button id="refresh-grid-btn" type="button" title="Actualizar archivos" aria-label="Actualizar archivos" class="dashboard-refresh-button p-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant">
                 <span id="refresh-icon" class="material-symbols-outlined text-lg block">refresh</span>
               </button>
             </div>
           </div>
 
           <div class="overflow-x-auto">
-            <table id="excel-files-table" class="w-full text-left border-collapse">
+            <table id="excel-files-table" class="dashboard-files-table w-full text-left border-collapse">
               <thead>
                 <tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider h-9">
                   <th class="py-space-xs px-space-md">Archivo Excel</th>
@@ -236,7 +244,7 @@
             </table>
           </div>
 
-          <div class="p-space-md bg-surface-container-low/70 flex items-center justify-between font-label-sm text-label-sm">
+          <div class="dashboard-files-footer p-space-md bg-surface-container-low/70 flex items-center justify-between font-label-sm text-label-sm">
             <span id="rows-count-indicator" class="text-outline"></span>
             <a href="/frontend/paginas/carga/index.html" class="text-secondary font-semibold hover:underline">Ver historial de cargas</a>
           </div>
