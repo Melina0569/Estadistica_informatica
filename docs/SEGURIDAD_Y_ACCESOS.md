@@ -11,14 +11,15 @@
 
 ## Direcciones IP y máquinas autorizadas
 
-| Recurso | Dirección observada | Estado |
-|---|---|---|
-| Servidor Flask | `127.0.0.1` | Verificada en `app.py`; solo loopback |
-| PostgreSQL local | `localhost` | Verificada como valor de desarrollo en `.env`; resuelve a IP pendiente |
-| Clientes autorizados | — | **Pendiente de verificar: no hay allowlist ni inventario de IPs en el código** |
-| Servidores de producción | — | **Pendiente de verificar** |
+**Situación actual**: El sistema se encuentra en una etapa de desarrollo y está alojado localmente en el equipo de desarrollo, utilizando Flask como backend y PostgreSQL como gestor de base de datos.
+**Implementación futura**: La aplicación será desplegada en un servidor institucional proporcionado por la universidad, cuya dirección OP, nombre de host y configuración de red serán definidos por Quipucamayoc.
+Para identificar los equipos que tendrán acceso al sistema, se realiza un registro de sus nombres de host y direcciones IP dentro de la red institucional. Esta información va a permitir identificar las estaciones de trabajo que utilizarán la plataforma durante la implementación.
 
-No es posible afirmar qué máquinas están autorizadas únicamente con este repositorio.
+
+N.°	| Nombre del equipo	  | Dirección IPv4 | Máscara de subred | Puerta de enlace	| Conexión
+1	| DESKTOP-U6UVBKD	  | 172.16.89.103  | 255.255.252.0	   | 172.16.88.1	    | Ethernet (Acá está alojada la información del código temporalmente)
+2	| Pendiente	Pendiente |	Pendiente	   | Pendiente	       | Pendiente          |
+3	| Pendiente	Pendiente |	Pendiente	   | Pendiente	       | Pendiente          |
 
 ## Medidas operativas pendientes
 
