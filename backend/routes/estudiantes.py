@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
+import io
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import joinedload, selectinload
+import hashlib
 import pandas as pd
 
 from extensions import db
@@ -10,6 +12,7 @@ from models.estudiantes import (
 )
 
 from models.historial_cargas import HistorialCarga, HistorialCargaCambio
+from models.correcciones import CorreccionReporte, ReporteValidacion
 
 estudiante_bp = Blueprint("estudiante_bp", __name__)
 
@@ -1389,6 +1392,44 @@ def analizar_calidad_datos(df):
     }
 
 
+def _huella_archivo(archivo):
+    contenido = archivo.read()
+    archivo.seek(0)
+    return hashlib.sha256(contenido).hexdigest()
+
+
+def _guardar_reporte_validacion(nombre_archivo, reporte, huella_archivo, contenido):
+    carga = HistorialCarga(
+        nombre_archivo=nombre_archivo,
+        total_filas=reporte.get("total_filas", 0),
+        inconsistencias=reporte["total_inconsistencias"],
+        estado="En corrección" if reporte["estado"] == "NO_APTO" else "Apta",
+        archivo_contenido=contenido,
+    )
+    db.session.add(carga)
+    db.session.flush()
+    db.session.add(ReporteValidacion(
+        id_carga=carga.id_carga,
+        nombre_archivo=nombre_archivo,
+        huella_archivo=huella_archivo,
+        total_filas=reporte.get("total_filas", 0),
+        total_inconsistencias=reporte["total_inconsistencias"],
+        resumen_inconsistencias=reporte["resumen_inconsistencias"],
+        estado="en_correccion" if reporte["estado"] == "NO_APTO" else "apta",
+    ))
+    db.session.commit()
+    return carga.id_carga
+
+
+def _aplicar_correcciones_pendientes(id_carga, df):
+    correcciones = CorreccionReporte.query.filter_by(id_carga=id_carga).all()
+    for correccion in correcciones:
+        campo = correccion.campo
+        if campo in df.columns:
+            df[campo] = correccion.valor
+    return df
+
+
 def _valor_previsualizacion(valor):
     if valor is None:
         return None
@@ -1987,6 +2028,8 @@ def cargar_excel():
                 )
             }), 400
 
+        huella_archivo = _huella_archivo(archivo)
+
         # ============================================================
         # 2. LEER EXCEL
         #
@@ -2069,6 +2112,14 @@ def cargar_excel():
             reporte["inconsistencias"],
         )
         reporte["correcciones_automaticas"] = correcciones_automaticas
+        archivo.seek(0)
+        id_carga = _guardar_reporte_validacion(
+            archivo.filename,
+            reporte,
+            huella_archivo,
+            archivo.read(),
+        )
+        reporte["id_carga"] = id_carga
 
         # ============================================================
         # 8. INDICAR QUÉ DEBE HACER EL USUARIO
@@ -2153,30 +2204,24 @@ def confirmar_carga():
         # 1. RECIBIR Y VALIDAR EL ARCHIVO
         # ============================================================
 
-        if "archivo" not in request.files:
+        reporte_activo = (
+            ReporteValidacion.query
+            .filter(ReporteValidacion.estado.in_(("apta", "en_correccion")))
+            .order_by(ReporteValidacion.id_reporte.desc())
+            .first()
+        )
+        carga_activa = (
+            db.session.get(HistorialCarga, reporte_activo.id_carga)
+            if reporte_activo else None
+        )
+        if not carga_activa or not carga_activa.archivo_contenido:
             return jsonify({
                 "estado": "ERROR",
-                "error": "No se recibió ningún archivo."
-            }), 400
-
-        archivo = request.files["archivo"]
-
-        if archivo.filename == "":
-            return jsonify({
-                "estado": "ERROR",
-                "error": "No se seleccionó ningún archivo."
-            }), 400
-
-        if not archivo.filename.lower().endswith(
-            (".xlsx", ".xls")
-        ):
-            return jsonify({
-                "estado": "ERROR",
-                "error": (
-                    "El archivo debe tener formato "
-                    "Excel (.xlsx o .xls)."
-                )
-            }), 400
+                "error": "No hay una carga analizada pendiente de confirmación."
+            }), 409
+        archivo = io.BytesIO(carga_activa.archivo_contenido)
+        archivo.name = carga_activa.nombre_archivo
+        huella_archivo = _huella_archivo(archivo)
 
         # ============================================================
         # 2. LEER EL EXCEL
@@ -2215,6 +2260,7 @@ def confirmar_carga():
         # 4. LIMPIAR Y NORMALIZAR LOS DATOS
         # ============================================================
 
+        df = _aplicar_correcciones_pendientes(carga_activa.id_carga, df)
         df = _limpiar_dataframe(df)
 
         df, correcciones_automaticas = (
@@ -2240,8 +2286,12 @@ def confirmar_carga():
                     "La carga fue cancelada porque el archivo "
                     "presenta inconsistencias."
                 ),
-                "archivo": archivo.filename,
+                "archivo": carga_activa.nombre_archivo,
                 "reporte": reporte,
+                "inconsistencias": reporte.get("inconsistencias", []),
+                "resumen_inconsistencias": reporte.get(
+                    "resumen_inconsistencias", []
+                ),
                 "correcciones_automaticas": (
                     correcciones_automaticas
                 )
@@ -2263,23 +2313,20 @@ def confirmar_carga():
 
                 filas_procesadas += 1
 
-            # Registrar la operación de carga en el historial.
-            historial = HistorialCarga(
-                nombre_archivo=archivo.filename,
-                tipo_planilla="Estudiantes",
-                total_filas=len(df),
-                registros_procesados=filas_procesadas,
-                inconsistencias=0,
-                estado="Completado",
-                observaciones=None
-            )
-
-            db.session.add(historial)
-            historial.cambios.extend(
+            carga_activa.total_filas = len(df)
+            carga_activa.registros_procesados = filas_procesadas
+            carga_activa.inconsistencias = 0
+            carga_activa.estado = "Completado"
+            carga_activa.observaciones = None
+            carga_activa.cambios.extend(
                 HistorialCargaCambio(**cambio)
                 for cambio in cambios_carga
             )
 
+            reporte_activo.estado = "subida"
+            CorreccionReporte.query.filter_by(
+                id_carga=carga_activa.id_carga
+            ).delete()
             # Confirmar estudiantes e historial en la misma transacción.
             db.session.commit()
 
@@ -2307,7 +2354,7 @@ def confirmar_carga():
                 "Los datos se cargaron correctamente "
                 "en PostgreSQL."
             ),
-            "archivo": archivo.filename,
+            "archivo": carga_activa.nombre_archivo,
             "filas_procesadas": filas_procesadas,
             "correcciones_automaticas": (
                 correcciones_automaticas

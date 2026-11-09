@@ -438,10 +438,10 @@ function pintarIndicadores(datos) {
   indicadoresDatos = datos;
   const kpis = datos.kpis;
   indicador$("kpi-estudiantes").textContent = formatoNumero(kpis.estudiantes);
-  indicador$("kpi-ingresos").textContent = formatoNumero(kpis.ingresos);
+  indicador$("kpi-ingresos").textContent = formatoNumero(kpis.programas);
   indicador$("kpi-matriculas").textContent = formatoNumero(kpis.matriculas);
-  indicador$("kpi-observaciones").textContent = `${kpis.tasa_observaciones}%`;
-  indicador$("kpi-observaciones-total").textContent = `${formatoNumero(kpis.observaciones)} incidencias`;
+  indicador$("kpi-facultades").textContent =
+    formatoNumero(kpis.facultades);
   Object.entries(datos.modulos).forEach(([modulo, total]) => {
     const nodo = indicador$(`modulo-${modulo}`);
     if (nodo) nodo.textContent = formatoNumero(total);

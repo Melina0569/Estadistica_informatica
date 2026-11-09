@@ -30,9 +30,15 @@ const API = {
             const detalle = cuerpo.detalle
                 ? ` ${cuerpo.detalle}`
                 : "";
-            throw new Error(
+            const error = new Error(
                 `${cuerpo.error || cuerpo.mensaje || `Error ${respuesta.status} en ${ruta}`}${detalle}`
             );
+            error.detalle = cuerpo.resumen_inconsistencias?.length
+                ? `${error.message} ${cuerpo.resumen_inconsistencias.map(
+                    (item) => `${item.campo}: ${item.mensaje || "valor inválido"}`
+                ).join(" | ")}`
+                : error.message;
+            throw error;
         }
 
         return cuerpo;
@@ -118,11 +124,8 @@ const API = {
         );
     },
 
-    confirmarCarga(archivo) {
-        return this.postArchivo(
-            "/estudiantes/confirmar-carga",
-            archivo
-        );
+    confirmarCarga() {
+        return this.post("/estudiantes/confirmar-carga");
     },
 
     // Estudiantes
@@ -205,13 +208,33 @@ const API = {
         return this.get(`/api/correcciones/inconsistencias?limite=${limite}`);
     },
 
+    getReporteActivo() {
+        return this.get("/api/correcciones/reporte-activo");
+    },
+
+    guardarReporteValidacion(archivo, reporte) {
+        return this.postJson("/api/correcciones/reporte-validacion", {
+            archivo,
+            reporte: {
+                estado: reporte.estado,
+                total_filas: reporte.total_filas,
+                total_inconsistencias: reporte.total_inconsistencias,
+                resumen_inconsistencias: reporte.resumen_inconsistencias
+            }
+        });
+    },
+
+    guardarCorreccionReporte(datos) {
+        return this.put("/api/correcciones/reporte-validacion/correccion", datos);
+    },
+
     getDetalleInconsistencia(tabla, campo) {
         const query = new URLSearchParams({tabla, campo});
         return this.get(`/api/correcciones/inconsistencias/detalle?${query}`);
     },
 
-    getAuditoriaCorrecciones() {
-        return this.get("/api/correcciones/auditoria");
+    getAuditoriaCorrecciones(pagina = 1) {
+        return this.get(`/api/correcciones/auditoria?pagina=${pagina}`);
     },
 
     corregirRegistro(datos) {

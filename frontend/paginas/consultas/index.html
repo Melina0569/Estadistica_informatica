@@ -130,6 +130,31 @@
       </div>
     </main>
   </div>
+  <dialog id="consulta-editar-dialog">
+    <form method="dialog" id="consulta-editar-form" class="consulta-editar-form">
+      <button type="button" class="dialog-close" id="consulta-editar-cerrar" aria-label="Cerrar">×</button>
+      <span class="dialog-eyebrow">Edición puntual</span>
+      <h2>Editar información del estudiante</h2>
+      <p id="consulta-editar-referencia" class="dialog-reference"></p>
+      <label>
+        Campo
+        <select id="consulta-editar-campo" required></select>
+      </label>
+      <label>
+        Nuevo valor
+        <input id="consulta-editar-valor" required autocomplete="off"/>
+      </label>
+      <label>
+        Motivo del cambio
+        <textarea id="consulta-editar-motivo" required placeholder="Explica por qué este valor debe modificarse."></textarea>
+      </label>
+      <p id="consulta-editar-mensaje" class="consulta-editar-mensaje" role="status"></p>
+      <div class="dialog-actions">
+        <button type="button" id="consulta-editar-cancelar" class="correccion-button secondary">Cancelar</button>
+        <button type="submit" class="correccion-button">Guardar cambio</button>
+      </div>
+    </form>
+  </dialog>
   <script src="/frontend/js/api.js"></script>
   <script src="/frontend/js/app.js"></script>
   <script src="/frontend/js/consultas.js"></script>

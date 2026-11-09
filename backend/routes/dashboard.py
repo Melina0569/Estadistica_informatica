@@ -476,7 +476,23 @@ def _cargar_cargas_con_conflictos(carga):
 def obtener_resumen():
     try:
         # Historial de cargas de archivos Excel
-        cargas = HistorialCarga.query.all()
+        ultima_carga = (
+            db.session.query(
+                HistorialCarga.nombre_archivo,
+                func.max(HistorialCarga.id_carga).label("id_carga"),
+            )
+            .filter(HistorialCarga.estado != "Eliminado")
+            .group_by(HistorialCarga.nombre_archivo)
+            .subquery()
+        )
+        cargas = (
+            HistorialCarga.query
+            .join(
+                ultima_carga,
+                HistorialCarga.id_carga == ultima_carga.c.id_carga,
+            )
+            .all()
+        )
 
         hoy = date.today()
 
@@ -511,6 +527,8 @@ def obtener_resumen():
         inconsistencias = sum(
             carga.inconsistencias or 0
             for carga in cargas
+            if (carga.estado or "").strip().lower()
+            in ("en corrección", "en revision", "en revisión", "observado")
         )
 
         periodo = _periodo_academico_actual()
@@ -573,7 +591,9 @@ def obtener_indicadores():
             )
 
         total_estudiantes = estudiantes.distinct().count()
-        total_ingresos = ingresos.count()
+        total_programas = ingresos.with_entities(
+            Ingreso.id_prog
+        ).filter(Ingreso.id_prog.isnot(None)).distinct().count()
         total_matriculas = (
             Matricula.query
             .join(Ingreso, Matricula.id_ingreso == Ingreso.id_ingreso)
@@ -582,10 +602,13 @@ def obtener_indicadores():
             ))
             .count()
         )
-        observaciones = sum(
-            carga.inconsistencias or 0
-            for carga in HistorialCarga.query.all()
-        )
+        facultades = ingresos.join(
+            Ingreso.programa
+        ).with_entities(
+            Programa.id_facultad
+        ).filter(
+            Programa.id_facultad.isnot(None)
+        ).distinct().count()
 
         por_facultad = (
             db.session.query(
@@ -638,13 +661,9 @@ def obtener_indicadores():
             },
             "kpis": {
                 "estudiantes": total_estudiantes,
-                "ingresos": total_ingresos,
+                "programas": total_programas,
                 "matriculas": total_matriculas,
-                "observaciones": observaciones,
-                "tasa_observaciones": round(
-                    observaciones / max(total_ingresos, 1) * 100,
-                    2,
-                ),
+                "facultades": facultades,
             },
             "por_facultad": [
                 {"nombre": nombre, "total": total}

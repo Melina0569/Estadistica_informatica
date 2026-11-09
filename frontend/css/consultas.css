@@ -297,3 +297,128 @@
     background: #dce9ff;
     transform: translateY(-2px);
 }
+.consulta-editar-form {
+  position: relative;
+  width: min(92vw, 30rem);
+  max-width: 30rem;
+  padding: 1.5rem;
+}
+
+#consulta-editar-dialog {
+  padding: 0;
+  border: 0;
+  border-radius: .9rem;
+  box-shadow: 0 20px 55px rgba(9, 20, 38, .22);
+}
+
+#consulta-editar-dialog::backdrop {
+  background: rgba(9, 20, 38, .42);
+  backdrop-filter: blur(3px);
+}
+
+.consulta-editar-form .dialog-close {
+  position: absolute;
+  top: .7rem;
+  right: .8rem;
+  border: 0;
+  background: transparent;
+  color: #68758a;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.consulta-editar-form .dialog-eyebrow {
+  color: #087aca;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.consulta-editar-form .dialog-reference {
+  margin: 0;
+  color: #68758a;
+  font-size: .78rem;
+}
+
+.consulta-editar-form .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .6rem;
+  margin-top: 1rem;
+}
+
+.consulta-editar-form .correccion-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.3rem;
+  padding: .55rem .85rem;
+  border: 0;
+  border-radius: .5rem;
+  color: #fff;
+  background: linear-gradient(135deg, #08a5df, #1765eb);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.consulta-editar-form .correccion-button.secondary {
+  color: #163d62;
+  background: #e5eeff;
+}
+
+.consulta-editar-form .correccion-button:disabled {
+  cursor: wait;
+  opacity: .6;
+}
+
+.consulta-editar-form h2 {
+  margin: .4rem 0 .35rem;
+  color: #123b63;
+  font: 700 1.2rem "Hanken Grotesk", sans-serif;
+}
+
+.consulta-editar-form label {
+  display: grid;
+  gap: .35rem;
+  margin-top: 1rem;
+  color: #526b82;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.consulta-editar-form input,
+.consulta-editar-form select,
+.consulta-editar-form textarea {
+  width: 100%;
+  padding: .65rem .75rem;
+  border: 1px solid #cbdceb;
+  border-radius: .55rem;
+  color: #172449;
+  background: #fff;
+  font: inherit;
+}
+
+.consulta-editar-form textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.consulta-editar-form input:focus,
+.consulta-editar-form select:focus,
+.consulta-editar-form textarea:focus {
+  outline: 3px solid rgba(0, 122, 202, .18);
+  border-color: #087aca;
+}
+
+.consulta-editar-mensaje {
+  min-height: 1.1rem;
+  margin: .7rem 0 0;
+  color: #b42318;
+  font-size: .75rem;
+}
+
+.consulta-editar-btn {
+  color: #075b92;
+  background: #e7f2ff;
+}

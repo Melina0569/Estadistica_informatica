@@ -39,6 +39,7 @@ let progresoIntervalo = null;
 let progresoActual = 0;
 let carruselIndice = 0;
 let carruselIntervalo = null;
+let seleccionarArchivoParaActualizar = false;
 const CLAVE_REPORTE_CARGA = "dataunmsm.ultimoReporteCarga";
 
 function escapar(texto) {
@@ -70,15 +71,34 @@ function mostrarArchivo(archivo) {
 }
 
 function guardarReporte(reporte, archivo) {
-    localStorage.setItem(CLAVE_REPORTE_CARGA, JSON.stringify({
-        reporte,
-        archivo: {
-            name: archivo.name,
-            size: archivo.size,
-            lastModified: archivo.lastModified
-        },
-        guardadoEn: new Date().toISOString()
-    }));
+    const reportePersistible = {
+        estado: reporte.estado,
+        total_filas: reporte.total_filas,
+        total_inconsistencias: reporte.total_inconsistencias,
+        inconsistencias: reporte.inconsistencias,
+        resumen_inconsistencias: reporte.resumen_inconsistencias,
+        correcciones_aplicadas: reporte.correcciones_aplicadas,
+        siguiente_paso: reporte.siguiente_paso,
+        vista_previa: reporte.vista_previa,
+        id_carga: reporte.id_carga
+    };
+
+    // Las correcciones automáticas y el detalle completo pueden contener
+    // miles de registros; solo se necesita este resumen para restaurar la vista.
+    try {
+        localStorage.removeItem(CLAVE_REPORTE_CARGA);
+        localStorage.setItem(CLAVE_REPORTE_CARGA, JSON.stringify({
+            reporte: reportePersistible,
+            archivo: {
+                name: archivo.name,
+                size: archivo.size,
+                lastModified: archivo.lastModified
+            },
+            guardadoEn: new Date().toISOString()
+        }));
+    } catch (error) {
+        console.error("No se pudo guardar el resumen del análisis:", error);
+    }
 }
 
 function eliminarReporteGuardado() {
@@ -100,7 +120,7 @@ function restaurarReporteGuardado() {
             datos.reporte.estado === "APTO" ? "ok" : "error"
         );
         renderizarReporte(datos.reporte, datos.archivo);
-        confirmarBtn.disabled = true;
+        confirmarBtn.disabled = datos.reporte.estado !== "APTO";
     } catch (error) {
         console.error("No se pudo restaurar el análisis guardado:", error);
         eliminarReporteGuardado();
@@ -229,10 +249,24 @@ function renderizarReporte(reporte, archivo) {
     const problemas = Array.isArray(reporte.inconsistencias)
         ? reporte.inconsistencias
         : [];
+    const totalProblemas = Number.isFinite(Number(reporte.total_inconsistencias))
+        ? Number(reporte.total_inconsistencias)
+        : problemas.length;
     const resumenProblemas = Array.isArray(reporte.resumen_inconsistencias)
         ? reporte.resumen_inconsistencias
         : [];
+    const correccionesAplicadas = Array.isArray(reporte.correcciones_aplicadas)
+        ? reporte.correcciones_aplicadas
+        : [];
     const filas = reporte.vista_previa?.filas || [];
+    const encabezado = document.querySelector(".carga-preview-table thead tr");
+    encabezado?.querySelectorAll("[data-correccion-header]").forEach((celda) => celda.remove());
+    correccionesAplicadas.forEach((item) => {
+        const celda = document.createElement("th");
+        celda.dataset.correccionHeader = "true";
+        celda.textContent = item.campo;
+        encabezado?.appendChild(celda);
+    });
 
     archivoResumen.hidden = false;
     archivoResumen.innerHTML = [
@@ -266,6 +300,7 @@ function renderizarReporte(reporte, archivo) {
                             ${observado ? "Observado" : "Apto"}
                         </span>
                     </td>
+                    ${correccionesAplicadas.map((item) => `<td>${escapar(item.valor)}</td>`).join("")}
                 </tr>
             `;
         }).join("")
@@ -273,10 +308,10 @@ function renderizarReporte(reporte, archivo) {
 
     moduloInconsistencias.hidden = false;
     inconsistenciasResumen.textContent = resumenProblemas.length
-        ? `Se agruparon ${problemas.length} caso(s) en ${resumenProblemas.length} tipo(s). Revisa el detalle en Correcciones.`
+        ? `Se agruparon ${totalProblemas} caso(s) en ${resumenProblemas.length} tipo(s). Revisa el detalle en Correcciones.`
         : "El backend no reportó inconsistencias para este archivo.";
-    inconsistenciasCasos.textContent = `${problemas.length} caso(s)`;
-    irCorrecciones.hidden = !problemas.length;
+    inconsistenciasCasos.textContent = `${totalProblemas} caso(s)`;
+    irCorrecciones.hidden = !totalProblemas;
 
     if (!resumenProblemas.length) {
         inconsistencias.innerHTML = `
@@ -387,7 +422,12 @@ iniciarCarrusel();
 archivoInput.addEventListener("change", () => {
     limpiarResultado();
     if (archivoInput.files[0]) {
+        eliminarReporteGuardado();
         mostrarArchivo(archivoInput.files[0]);
+        if (seleccionarArchivoParaActualizar) {
+            seleccionarArchivoParaActualizar = false;
+            cargaForm.requestSubmit();
+        }
     }
 });
 
@@ -474,7 +514,7 @@ confirmarBtn.addEventListener("click", async () => {
     );
 
     try {
-        const respuesta = await API.confirmarCarga(archivoSeleccionado());
+        const respuesta = await API.confirmarCarga();
         finalizarProgreso("Los datos fueron guardados correctamente.");
         mostrarResultado(
             respuesta,
@@ -482,10 +522,14 @@ confirmarBtn.addEventListener("click", async () => {
             "ok"
         );
         confirmarBtn.disabled = true;
+        eliminarReporteGuardado();
+        archivoInput.value = "";
+        fileName.hidden = true;
         mostrarSerpentinas();
     } catch (error) {
         cancelarProgreso();
-        mostrarResultado({}, error.message, "error");
+        const detalle = error.detalle || error.message;
+        mostrarResultado({}, detalle, "error");
         confirmarBtn.disabled = false;
     } finally {
         analizarBtn.disabled = false;
@@ -508,10 +552,58 @@ actualizarAnalisisBtn.addEventListener("click", () => {
         return;
     }
 
-    eliminarReporteGuardado();
-    limpiarResultado();
-    archivoInput.focus();
+    seleccionarArchivoParaActualizar = true;
+    resultadoMensaje.className = "carga-message visible";
+    resultadoMensaje.textContent =
+        "Para actualizar este análisis, vuelve a seleccionar el archivo original.";
+    archivoInput.click();
 });
 
-archivoInput.addEventListener("change", eliminarReporteGuardado);
-restaurarReporteGuardado();
+async function restaurarReporteDesdeBackend() {
+    try {
+        const respuesta = await API.getReporteActivo();
+        if (!respuesta.reporte) return;
+        const archivo = {
+            name: respuesta.archivo,
+            size: 0,
+            lastModified: 0
+        };
+        let reporte = respuesta.reporte;
+        const guardado = localStorage.getItem(CLAVE_REPORTE_CARGA);
+        if (guardado) {
+            try {
+                const local = JSON.parse(guardado);
+                if (local.reporte?.id_carga === respuesta.id_carga) {
+                    reporte = {...local.reporte, ...respuesta.reporte};
+                }
+            } catch (error) {
+                console.warn("Se ignoró el resumen local inválido:", error);
+            }
+        }
+        ultimoReporte = reporte;
+        guardarReporte(reporte, archivo);
+        mostrarArchivo(archivo);
+        mostrarResultado(
+            reporte,
+            reporte.estado === "APTO"
+                ? "El análisis apto está listo para confirmar la carga."
+                : "Análisis restaurado desde el backend. Corrige las inconsistencias pendientes.",
+            reporte.estado === "APTO" ? "ok" : "error"
+        );
+        renderizarReporte(reporte, archivo);
+        confirmarBtn.disabled = reporte.estado !== "APTO";
+    } catch (error) {
+        console.error("No se pudo restaurar el análisis desde el backend:", error);
+    }
+}
+
+restaurarReporteDesdeBackend().then(() => {
+    if (!ultimoReporte) restaurarReporteGuardado();
+});
+
+if (new URLSearchParams(window.location.search).get("reanalizar") === "1") {
+    resultadoMensaje.className = "carga-message visible";
+    resultadoMensaje.textContent =
+        "Selecciona nuevamente el archivo corregido y pulsa «Actualizar análisis» para comprobar los cambios antes de confirmar la carga.";
+    window.history.replaceState({}, document.title, window.location.pathname);
+}

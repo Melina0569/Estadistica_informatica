@@ -17,15 +17,46 @@ function listaCamposDetalle(campos) {
   return campos.map(([titulo, valor]) => campoDetalle(titulo, valor)).join("");
 }
 
-function renderizarMatricula(matricula) {
+function clavePeriodo(matricula, indice) {
+  return String(matricula.periodo_mat || `matricula-${indice}`);
+}
+
+function leerPeriodosGuardados(idEstudiante) {
+  try {
+    return new Set(JSON.parse(
+      sessionStorage.getItem(`historial-academico:${idEstudiante}`) || "[]"
+    ));
+  } catch (error) {
+    console.warn("No se pudo recuperar el estado del historial académico:", error);
+    return new Set();
+  }
+}
+
+function guardarPeriodo(idEstudiante, periodo) {
+  try {
+    const periodosGuardados = leerPeriodosGuardados(idEstudiante);
+    periodosGuardados.add(periodo);
+    sessionStorage.setItem(
+      `historial-academico:${idEstudiante}`,
+      JSON.stringify([...periodosGuardados])
+    );
+    return true;
+  } catch (error) {
+    console.warn("No se pudo guardar el estado del historial académico:", error);
+    return false;
+  }
+}
+
+function renderizarMatricula(matricula, indice, periodosGuardados, abierta = false) {
+  const periodo = clavePeriodo(matricula, indice);
   const campos = [
     ["Nivel", matricula.nivel],
     ["Modalidad de estudio", matricula.modalidad_estudio],
-    ["Periodo", matricula.periodo_mat],
-    ["Régimen", matricula.regimen_matricula],
     ["Ciclo / año de estudios", matricula.ciclo],
     ["Permanencia", matricula.permanencia],
     ["Primer periodo", matricula.primer_mat],
+    ["Periodo", matricula.periodo_mat],
+    ["Régimen", matricula.regimen_matricula],
     ["Créditos acumulados del semestre", matricula.creditos_acum_sem],
     ["Créditos acumulados total", matricula.creditos_acum_total],
     ["Cursos matriculados/aprobados", matricula.cursos_mat_cat],
@@ -34,15 +65,88 @@ function renderizarMatricula(matricula) {
   ];
 
   return `
-    <article class="border border-surface-container rounded-lg p-space-md">
-      <h4 class="font-label-md text-label-md text-primary font-bold">
-        Matrícula ${escDetalle(matricula.periodo_mat) || ""}
-      </h4>
-      <dl class="grid grid-cols-2 md:grid-cols-4 gap-space-md mt-space-md">
-        ${listaCamposDetalle(campos)}
+    <article class="historial-periodo${abierta ? " is-open" : ""}${periodosGuardados.has(periodo) ? " is-saved" : ""}" data-periodo="${escDetalle(periodo)}">
+      <button type="button" class="historial-periodo-trigger" aria-expanded="${abierta}">
+        <span class="historial-periodo-title">
+          <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+          <span>
+            <small>Periodo académico:</small>
+            <span class="historial-periodo-year">
+              <strong>${escDetalle(matricula.periodo_mat) || "Sin periodo"}</strong>
+              <small class="historial-periodo-ingreso">ID: ${escDetalle(matricula.id_ingreso) || "—"}</small>
+            </span>
+          </span>
+        </span>
+        <span class="historial-periodo-status">${periodosGuardados.has(periodo) ? "Guardada" : "Ver información"}</span>
+        <span class="material-symbols-outlined historial-periodo-chevron" aria-hidden="true">expand_more</span>
+      </button>
+      <div class="historial-periodo-content" aria-hidden="${!abierta}">
+        <div class="historial-periodo-inner">
+          <dl class="historial-periodo-fields">
+            ${listaCamposDetalle(campos)}
+          </dl>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function renderizarIngresoUniversitario(ingreso) {
+  return `
+    <article class="universidad-item">
+      <div class="universidad-item-head">
+        <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+        <div>
+          <strong>${escDetalle(ingreso.programa) || "Programa no registrado"}</strong>
+        </div>
+      </div>
+      <dl class="universidad-fields">
+        ${listaCamposDetalle([
+          ["Facultad", ingreso.facultad],
+          ["Código de programa", ingreso.cod_prog],
+          ["Especialidad", ingreso.especialidad],
+          ["Modalidad de ingreso", ingreso.modalidad_ingreso],
+          ["Sede", ingreso.sede],
+        ])}
       </dl>
     </article>
   `;
+}
+
+function claveIngresoUniversitario(ingreso) {
+  return [
+    ingreso.programa,
+    ingreso.facultad,
+    ingreso.cod_prog,
+    ingreso.especialidad,
+    ingreso.modalidad_ingreso,
+    ingreso.sede,
+  ].map(normalizarValorIngreso).join("|");
+}
+
+function normalizarValorIngreso(valor) {
+  const normalizado = String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  return ["", "-", "--", "---", "----", "n a", "na", "no aplica"].includes(normalizado)
+    ? ""
+    : normalizado;
+}
+
+function ingresosUnicos(ingresos) {
+  const vistos = new Set();
+  return ingresos.filter((ingreso) => {
+    const clave = claveIngresoUniversitario(ingreso);
+    if (vistos.has(clave)) {
+      return false;
+    }
+    vistos.add(clave);
+    return true;
+  });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -54,6 +158,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   iniciarReloj();
 
   const id = new URLSearchParams(location.search).get("id");
+  const retorno = new URLSearchParams(location.search).get("return");
+  const botonVolver = document.querySelector(".detalle-volver");
+  if (retorno && retorno.startsWith("/frontend/paginas/consultas/")) {
+    botonVolver.href = retorno;
+  }
   const panel = document.getElementById("estudiante-detalle");
 
   if (!id) {
@@ -63,58 +172,38 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     const estudiante = await API.getEstudiante(id);
-    const ingresos = (estudiante.ingresos || []).map((ingreso) => `
-      <article class="border border-surface-container rounded-lg p-space-md">
-        <div class="flex flex-wrap justify-between gap-space-sm">
-          <strong>${escDetalle(ingreso.programa) || "Programa no registrado"}</strong>
-          <span class="font-data-mono-sm text-data-mono-sm text-outline">${escDetalle(ingreso.periodo_ingreso) || "—"}</span>
-        </div>
-        <p class="font-body-sm text-body-sm text-on-surface-variant mt-space-2xs">
-          ${escDetalle(ingreso.facultad)} · ${escDetalle(ingreso.especialidad)} · ${escDetalle(ingreso.sede)}
-        </p>
-        <dl class="grid grid-cols-2 md:grid-cols-4 gap-space-md mt-space-md">
-          ${listaCamposDetalle([
-            ["ID de ingreso", ingreso.id_ingreso],
-            ["Tipo de preparación", ingreso.tipo_preparacion],
-            ["Modalidad de ingreso", ingreso.modalidad_ingreso],
-            ["Periodo de ingreso", ingreso.periodo_ingreso],
-            ["Facultad", ingreso.facultad],
-            ["Código de programa", ingreso.cod_prog],
-            ["Programa", ingreso.programa],
-            ["Especialidad", ingreso.especialidad],
-            ["Sede", ingreso.sede],
-          ])}
-        </dl>
-        <div class="mt-space-lg">
-          <h4 class="font-label-md text-label-md text-primary font-bold">
-            Matrículas (${(ingreso.matriculas || []).length})
-          </h4>
-          <div class="space-y-space-sm mt-space-sm">
-            ${(ingreso.matriculas || []).map(renderizarMatricula).join("") ||
-              '<p class="text-on-surface-variant">No hay matrículas registradas.</p>'}
-          </div>
-        </div>
-      </article>
-    `).join("");
+    const periodosGuardados = leerPeriodosGuardados(estudiante.id_codigo_alumno || id);
+    const ingresos = estudiante.ingresos || [];
+    const ingresosMostrados = ingresosUnicos(ingresos);
+    const matriculas = ingresos.flatMap((ingreso) =>
+      (ingreso.matriculas || []).map((matricula) => ({
+        ...matricula,
+        id_ingreso: ingreso.id_ingreso,
+      }))
+    );
+    const promedios = matriculas
+      .map((matricula) => Number(matricula.promedio_pond))
+      .filter((promedio) => Number.isFinite(promedio));
+    const promedioGeneral = promedios.length
+      ? promedios.reduce((total, promedio) => total + promedio, 0) / promedios.length
+      : 0;
 
     panel.innerHTML = `
-      <div class="flex flex-col md:flex-row md:items-center gap-space-lg">
-        <img
-                src="/frontend/assets/icons/Estudiante.png"
-                alt="Estudiante"
-                class="detalle-icono-estudiante"
-            >
-        <div>
-          <span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Ficha del estudiante</span>
-          <h1 class="font-headline-xl text-headline-xl text-primary mt-space-xs">${escDetalle(estudiante.nombres)} ${escDetalle(estudiante.apellido_pat)} ${escDetalle(estudiante.apellido_mat)}</h1>
-          <p class="font-data-mono text-data-mono text-secondary mt-space-2xs">${escDetalle(estudiante.id_codigo_alumno)}</p>
-        </div>
-      </div>
-      <section class="mt-space-xl">
-        <h2 class="font-headline-sm text-headline-sm text-primary font-bold">Información personal</h2>
-        <dl class="grid grid-cols-1 md:grid-cols-3 gap-space-lg mt-space-md">
-          ${listaCamposDetalle([
-            ["Código del estudiante", estudiante.id_codigo_alumno],
+      <div class="detalle-ficha">
+        <header class="detalle-ficha-header">
+          <img src="/frontend/assets/icons/Estudiante.png" alt="Estudiante" class="detalle-ficha-icon">
+          <div>
+            <span class="detalle-eyebrow">Ficha del estudiante</span>
+            <h1>${escDetalle(estudiante.nombres)} ${escDetalle(estudiante.apellido_pat)} ${escDetalle(estudiante.apellido_mat)}</h1>
+            <p>Código: <strong>${escDetalle(estudiante.id_codigo_alumno)}</strong></p>
+          </div>
+        </header>
+        <div class="detalle-layout">
+          <aside class="detalle-sidebar">
+            <section class="detalle-card">
+              <h2><span class="material-symbols-outlined" aria-hidden="true">person</span>Información personal</h2>
+              <dl class="detalle-fields">
+                ${listaCamposDetalle([
             ["Tipo de documento", estudiante.tipo_doc_id],
             ["Número de documento", estudiante.num_dni],
             ["Nombres", estudiante.nombres],
@@ -128,17 +217,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             ["Correo personal", estudiante.correo_per],
             ["Teléfono fijo", estudiante.telefono_fijo],
             ["Teléfono móvil", estudiante.telefono_movil],
-            ["Distrito de domicilio", estudiante.distrito_domicilio],
-            ["Identidad étnica", estudiante.identi_etnica],
-            ["Lengua nativa", estudiante.lengua_nativa],
-            ["Idioma extranjero", estudiante.idioma_extranjero],
-          ])}
-        </dl>
-      </section>
-      <section class="mt-space-xl">
-        <h2 class="font-headline-sm text-headline-sm text-primary font-bold">Información relacionada</h2>
-        <dl class="grid grid-cols-1 md:grid-cols-3 gap-space-lg mt-space-md">
-          ${listaCamposDetalle([
+                ])}
+              </dl>
+            </section>
+            <section class="detalle-card">
+              <h2><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Datos de procedencia</h2>
+              <dl class="detalle-fields">
+                ${listaCamposDetalle([
             ["Colegio de procedencia", estudiante.colegio],
             ["Beca", estudiante.beca],
             ["Discapacidad", estudiante.discapacidad],
@@ -147,16 +232,55 @@ document.addEventListener("DOMContentLoaded", async () => {
             ["Departamento de nacimiento", estudiante.ubigeo && estudiante.ubigeo.dep_nac],
             ["Provincia de nacimiento", estudiante.ubigeo && estudiante.ubigeo.provincia_nac],
             ["Distrito de nacimiento", estudiante.ubigeo && estudiante.ubigeo.distrito_nac],
-          ])}
-        </dl>
-      </section>
-      <div class="mt-space-xl">
-        <h2 class="font-headline-sm text-headline-sm text-primary font-bold">Historial académico</h2>
-        <div class="space-y-space-sm mt-space-md">
-          ${ingresos || '<p class="text-on-surface-variant">No hay ingresos académicos registrados.</p>'}
+                ])}
+              </dl>
+            </section>
+          </aside>
+          <div class="detalle-main">
+            <section class="detalle-card universidad-card">
+              <h2><span class="material-symbols-outlined" aria-hidden="true">account_balance</span>Información universitaria</h2>
+              <div class="universidad-list">
+                ${ingresosMostrados.map(renderizarIngresoUniversitario).join("") ||
+                  '<p class="detalle-empty">No hay información universitaria registrada.</p>'}
+              </div>
+            </section>
+            <section class="detalle-card historial-card">
+              <div class="historial-heading">
+                <h2><span class="material-symbols-outlined" aria-hidden="true">bar_chart</span>Historial académico</h2>
+                <div class="historial-stats">
+                  <span><small>Total de matrículas</small><strong>${matriculas.length}</strong></span>
+                  <span><small>Promedio general</small><strong>${promedioGeneral ? promedioGeneral.toFixed(2) : "—"}</strong></span>
+                </div>
+              </div>
+              <div class="historial-list">
+                ${matriculas.map((matricula, indice) =>
+                  renderizarMatricula(matricula, indice, periodosGuardados, indice === 0)
+                ).join("") || '<p class="detalle-empty">No hay matrículas registradas.</p>'}
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     `;
+
+    panel.querySelectorAll(".historial-periodo-trigger").forEach((boton) => {
+      boton.addEventListener("click", () => {
+        const tarjeta = boton.closest(".historial-periodo");
+        const contenido = tarjeta.querySelector(".historial-periodo-content");
+        const abierta = tarjeta.classList.toggle("is-open");
+        boton.setAttribute("aria-expanded", String(abierta));
+        contenido.setAttribute("aria-hidden", String(!abierta));
+        if (abierta) {
+          tarjeta.querySelector(".historial-periodo-status").textContent = "Cerrar información";
+          return;
+        }
+        const guardada = guardarPeriodo(estudiante.id_codigo_alumno || id, tarjeta.dataset.periodo);
+        tarjeta.classList.toggle("is-saved", guardada);
+        tarjeta.querySelector(".historial-periodo-status").textContent = guardada
+          ? "Guardada"
+          : "Información cerrada";
+      });
+    });
   } catch (error) {
     console.error("Error al consultar el estudiante:", error);
     panel.textContent = error.message || "No se pudo consultar el estudiante.";

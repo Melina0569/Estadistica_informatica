@@ -49,11 +49,16 @@ class HistorialCarga(db.Model):
     estado = db.Column(
         db.String(30),
         nullable=False,
-        default="En revisión"
+        default="Analizada"
     )
 
     observaciones = db.Column(
         db.Text,
+        nullable=True
+    )
+
+    archivo_contenido = db.Column(
+        db.LargeBinary,
         nullable=True
     )
 
