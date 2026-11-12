@@ -183,6 +183,13 @@ def guardar_correccion_reporte():
     )
     if not reporte:
         return jsonify({"error": "No hay un reporte de archivo pendiente."}), 404
+    
+    filas_afectadas = sorted({
+        fila
+        for item in (reporte.resumen_inconsistencias or [])
+        if item.get("campo") == campo
+        for fila in (item.get("filas") or [])
+    })
 
     existente = CorreccionReporte.query.filter_by(
         nombre_archivo=reporte.nombre_archivo,
@@ -194,6 +201,7 @@ def guardar_correccion_reporte():
         valor_anterior = existente.valor
         existente.valor = str(valor).strip()
         existente.motivo = motivo
+        existente.filas = filas_afectadas 
         existente.creado_en = datetime.now()
     else:
         valor_anterior = None
@@ -204,6 +212,7 @@ def guardar_correccion_reporte():
             campo=campo,
             valor=str(valor).strip(),
             motivo=motivo,
+            filas=filas_afectadas,
         ))
     db.session.add(AuditoriaCorreccion(
         tabla="archivo",

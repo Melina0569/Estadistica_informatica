@@ -209,8 +209,30 @@ def _filtros_indicadores():
             "nivel",
             "ciclo",
             "buscar",
+            "nivel_academico",
+            "grado_posgrado",
+            "anio_desde",
+            "anio_hasta",
         )
     }
+
+
+def _condicion_nivel(filtros):
+    nivel = func.lower(func.trim(Matricula.nivel))
+    nivel_academico = filtros.get("nivel_academico")
+    grado = filtros.get("grado_posgrado")
+    condiciones = []
+    if nivel_academico == "pregrado":
+        condiciones.append(nivel.in_(("pregrado", "p", "pre")))
+    elif nivel_academico == "posgrado":
+        condiciones.append(nivel.in_(
+            ("posgrado", "postgrado", "pg", "m", "d", "maestria", "doctorado")
+        ))
+    if grado == "maestria":
+        condiciones.append(nivel.in_(("m", "maestria", "magister")))
+    elif grado == "doctorado":
+        condiciones.append(nivel.in_(("d", "doctorado", "doctor")))
+    return condiciones
 
 
 def _columnas_solicitadas():
@@ -556,8 +578,31 @@ def obtener_resumen():
 )
 def obtener_indicadores():
     try:
-        facultad_filtro = (request.args.get("facultad") or "").strip()
-        periodo_filtro = (request.args.get("periodo") or "").strip()
+        filtros = _filtros_indicadores()
+        facultad_filtro = filtros["facultad"]
+        periodo_filtro = filtros["periodo"]
+        periodos_disponibles = sorted({
+            str(periodo).strip()
+            for (periodo,) in db.session.query(Ingreso.periodo_ingreso)
+            .filter(Ingreso.periodo_ingreso.isnot(None))
+            .distinct()
+            .all()
+            if str(periodo).strip()
+        })
+        anios_disponibles = sorted({
+            periodo[:4] for periodo in periodos_disponibles
+            if len(periodo) >= 4 and periodo[:4].isdigit()
+        })
+        # Los indicadores deben iniciar con todo el histórico disponible.
+        # Limitarlo a los primeros años hacía que facultades con registros
+        # recientes aparecieran sin contenido al seleccionarlas.
+        anios_defecto = anios_disponibles
+        anio_desde = filtros["anio_desde"] or (
+            anios_defecto[0] if anios_defecto else ""
+        )
+        anio_hasta = filtros["anio_hasta"] or (
+            anios_defecto[-1] if anios_defecto else ""
+        )
 
         estudiantes = Estudiante.query
         ingresos = Ingreso.query
@@ -580,6 +625,36 @@ def obtener_indicadores():
                 f"%{facultad_filtro}%"
             ))
 
+        programa_filtro = filtros["programa"].partition("||")[0]
+        carrera_filtro = filtros["carrera"].partition("||")[0]
+        if programa_filtro:
+            estudiantes = estudiantes.filter(
+                Estudiante.ingresos.any(
+                    Ingreso.programa.has(
+                        func.trim(Programa.nombre_prog) == programa_filtro
+                    )
+                )
+            )
+            ingresos = ingresos.filter(
+                Ingreso.programa.has(
+                    func.trim(Programa.nombre_prog) == programa_filtro
+                )
+            )
+
+        if carrera_filtro:
+            estudiantes = estudiantes.filter(
+                Estudiante.ingresos.any(
+                    Ingreso.especialidad.has(
+                        func.trim(Especialidad.nomb_especialidad) == carrera_filtro
+                    )
+                )
+            )
+            ingresos = ingresos.filter(
+                Ingreso.especialidad.has(
+                    func.trim(Especialidad.nomb_especialidad) == carrera_filtro
+                )
+            )
+
         if periodo_filtro:
             estudiantes = estudiantes.filter(
                 Estudiante.ingresos.any(
@@ -589,6 +664,31 @@ def obtener_indicadores():
             ingresos = ingresos.filter(
                 Ingreso.periodo_ingreso == periodo_filtro
             )
+
+        if anio_desde:
+            estudiantes = estudiantes.filter(
+                Estudiante.ingresos.any(
+                    func.substr(Ingreso.periodo_ingreso, 1, 4) >= anio_desde
+                )
+            )
+            ingresos = ingresos.filter(
+                func.substr(Ingreso.periodo_ingreso, 1, 4) >= anio_desde
+            )
+        if anio_hasta:
+            estudiantes = estudiantes.filter(
+                Estudiante.ingresos.any(
+                    func.substr(Ingreso.periodo_ingreso, 1, 4) <= anio_hasta
+                )
+            )
+            ingresos = ingresos.filter(
+                func.substr(Ingreso.periodo_ingreso, 1, 4) <= anio_hasta
+            )
+
+        for condicion in _condicion_nivel(filtros):
+            estudiantes = estudiantes.filter(
+                Estudiante.ingresos.any(Ingreso.matriculas.any(condicion))
+            )
+            ingresos = ingresos.filter(Ingreso.matriculas.any(condicion))
 
         total_estudiantes = estudiantes.distinct().count()
         total_programas = ingresos.with_entities(
@@ -610,7 +710,8 @@ def obtener_indicadores():
             Programa.id_facultad.isnot(None)
         ).distinct().count()
 
-        por_facultad = (
+        ingreso_ids = ingresos.with_entities(Ingreso.id_ingreso)
+        totales_facultad = dict(
             db.session.query(
                 Facultad.nomb_facultad,
                 func.count(func.distinct(Estudiante.id_codigo_alumno)),
@@ -621,10 +722,37 @@ def obtener_indicadores():
                 Estudiante,
                 Estudiante.id_codigo_alumno == Ingreso.id_codigo_alumno,
             )
+            .filter(Ingreso.id_ingreso.in_(ingreso_ids))
             .group_by(Facultad.nomb_facultad)
-            .order_by(func.count(func.distinct(
-                Estudiante.id_codigo_alumno
-            )).desc())
+            .all()
+        )
+        por_facultad = (
+            db.session.query(
+                Facultad.nomb_facultad,
+                func.coalesce(
+                    func.trim(Especialidad.nomb_especialidad),
+                    func.trim(Programa.nombre_prog),
+                ),
+                func.count(func.distinct(Estudiante.id_codigo_alumno)),
+            )
+            .join(Programa, Programa.id_facultad == Facultad.id_facultad)
+            .join(Ingreso, Ingreso.id_prog == Programa.id_prog)
+            .outerjoin(Especialidad, Especialidad.id_especialidad == Ingreso.id_especialidad)
+            .join(
+                Estudiante,
+                Estudiante.id_codigo_alumno == Ingreso.id_codigo_alumno,
+            )
+            .filter(Ingreso.id_ingreso.in_(ingreso_ids))
+            .group_by(
+                Facultad.nomb_facultad,
+                func.coalesce(
+                    func.trim(Especialidad.nomb_especialidad),
+                    func.trim(Programa.nombre_prog),
+                ),
+            )
+            .order_by(Facultad.nomb_facultad, func.count(
+                func.distinct(Estudiante.id_codigo_alumno)
+            ).desc())
             .all()
         )
 
@@ -633,19 +761,103 @@ def obtener_indicadores():
                 Ingreso.periodo_ingreso,
                 func.count(func.distinct(Ingreso.id_codigo_alumno)),
             )
-            .filter(Ingreso.periodo_ingreso.isnot(None))
+            .filter(
+                Ingreso.periodo_ingreso.isnot(None),
+                Ingreso.id_ingreso.in_(ingreso_ids),
+            )
             .group_by(Ingreso.periodo_ingreso)
             .order_by(Ingreso.periodo_ingreso)
             .all()
         )
 
+        serie_grupo = Facultad.nomb_facultad
+        if facultad_filtro:
+            serie_grupo = func.coalesce(
+                func.trim(Especialidad.nomb_especialidad),
+                func.trim(Programa.nombre_prog),
+            )
+        anio_ingreso = func.substr(Ingreso.periodo_ingreso, 1, 4)
+        serie_periodos_query = (
+            db.session.query(
+                serie_grupo,
+                anio_ingreso,
+                func.count(func.distinct(Ingreso.id_codigo_alumno)),
+            )
+            .join(Programa, Programa.id_prog == Ingreso.id_prog)
+            .join(Facultad, Facultad.id_facultad == Programa.id_facultad)
+            .outerjoin(
+                Especialidad,
+                Especialidad.id_especialidad == Ingreso.id_especialidad,
+            )
+            .filter(Ingreso.id_ingreso.in_(ingreso_ids))
+            .filter(Ingreso.periodo_ingreso.isnot(None))
+            .group_by(serie_grupo, anio_ingreso)
+            .order_by(serie_grupo, anio_ingreso)
+            .all()
+        )
+        series_periodo = {}
+        for nombre, anio, total in serie_periodos_query:
+            series_periodo.setdefault(str(nombre or "Sin categoría"), {})[
+                str(anio).strip()
+            ] = total
+        anio_inicio = int(anio_desde) if anio_desde.isdigit() else None
+        anio_fin = int(anio_hasta) if anio_hasta.isdigit() else None
+        anios_grafico = (
+            [str(anio) for anio in range(anio_inicio, anio_fin + 1)]
+            if anio_inicio is not None
+            and anio_fin is not None
+            and anio_inicio <= anio_fin
+            else anios_disponibles
+        )
+        series_periodo = [
+            {
+                "nombre": nombre,
+                "puntos": [
+                    {
+                        "periodo": anio,
+                        "total": valores.get(anio),
+                    }
+                    for anio in anios_grafico
+                ],
+            }
+            for nombre, valores in series_periodo.items()
+        ]
+        distribucion_facultades = [
+            {
+                "nombre": nombre,
+                "total": totales_facultad.get(nombre, 0),
+                "carreras": [
+                    {"nombre": carrera, "total": carrera_total}
+                    for facultad, carrera, carrera_total in por_facultad
+                    if facultad == nombre
+                ],
+            }
+            for nombre in totales_facultad
+        ]
+        distribucion_facultades.sort(key=lambda fila: fila["total"], reverse=True)
+
+        estudiante_ids = estudiantes.with_entities(Estudiante.id_codigo_alumno)
         por_beca = (
             db.session.query(
                 func.coalesce(Beca.nomb_beca, "Sin beca"),
                 func.count(func.distinct(Estudiante.id_codigo_alumno)),
             )
             .outerjoin(Beca, Estudiante.id_beca == Beca.id_beca)
+            .filter(Estudiante.id_codigo_alumno.in_(estudiante_ids))
             .group_by(func.coalesce(Beca.nomb_beca, "Sin beca"))
+            .order_by(func.count(func.distinct(
+                Estudiante.id_codigo_alumno
+            )).desc())
+            .all()
+        )
+
+        por_genero = (
+            db.session.query(
+                func.coalesce(Estudiante.sexo, "Sin especificar"),
+                func.count(func.distinct(Estudiante.id_codigo_alumno)),
+            )
+            .filter(Estudiante.id_codigo_alumno.in_(estudiante_ids))
+            .group_by(func.coalesce(Estudiante.sexo, "Sin especificar"))
             .order_by(func.count(func.distinct(
                 Estudiante.id_codigo_alumno
             )).desc())
@@ -665,17 +877,23 @@ def obtener_indicadores():
                 "matriculas": total_matriculas,
                 "facultades": facultades,
             },
-            "por_facultad": [
-                {"nombre": nombre, "total": total}
-                for nombre, total in por_facultad
-            ],
+            "por_facultad": distribucion_facultades,
             "por_periodo": [
                 {"nombre": periodo, "total": total}
                 for periodo, total in por_periodo
             ],
+            "series_periodo": series_periodo,
+            "anios": anios_disponibles,
+            "anios_grafico": anios_grafico,
+            "anio_desde": anio_desde,
+            "anio_hasta": anio_hasta,
             "por_beca": [
                 {"nombre": nombre, "total": total}
                 for nombre, total in por_beca
+            ],
+            "por_genero": [
+                {"nombre": nombre, "total": total}
+                for nombre, total in por_genero
             ],
         }), 200
 

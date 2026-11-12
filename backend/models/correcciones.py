@@ -54,7 +54,8 @@ class ReporteValidacion(db.Model):
 
 class CorreccionReporte(db.Model):
     __tablename__ = "correcciones_reportes"
-
+    
+    filas = db.Column(db.JSON, nullable=True)
     id_correccion = db.Column(db.Integer, primary_key=True)
     id_carga = db.Column(
         db.Integer,

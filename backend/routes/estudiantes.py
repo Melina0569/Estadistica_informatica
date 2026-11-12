@@ -45,7 +45,7 @@ def opciones_estudiante():
         joinedload(Estudiante.ubigeo),
         selectinload(Estudiante.ingresos).joinedload(Ingreso.programa).joinedload(Programa.facultad),
         selectinload(Estudiante.ingresos).joinedload(Ingreso.especialidad),
-        selectinload(Estudiante.ingresos).joinedload(Ingreso.sede),
+        selectinload(Estudiante.ingresos).joinedload(Ingreso.sede).selectinload(Sede.locales),
         selectinload(Estudiante.ingresos).selectinload(Ingreso.matriculas),
     ]
 
@@ -71,7 +71,16 @@ def serializar_estudiante(estudiante: Estudiante, incluir_relaciones=True):
         "telefono_fijo": estudiante.telefono_fijo,
         "telefono_movil": estudiante.telefono_movil,
         "beca": estudiante.beca.nomb_beca if estudiante.beca else None,
-        "colegio": estudiante.colegio.nomb_colegio if estudiante.colegio else None,
+        "anio_fin_sec": estudiante.anio_fin_sec,
+        "colegio": (
+            {
+                "nomb_colegio": estudiante.colegio.nomb_colegio,
+                "colegio_procedencia": estudiante.colegio.colegio_procedencia,
+                "tipo_procedencia": estudiante.colegio.tipo_procedencia,
+                "distrito_colegio": estudiante.colegio.distrito_colegio,
+            }
+            if estudiante.colegio else None
+        ),
         "discapacidad": (
             estudiante.discapacidad.tipo_discapacidad
             if estudiante.discapacidad else None
@@ -115,6 +124,12 @@ def serializar_ingreso(ingreso: Ingreso, incluir_matriculas=False):
             ingreso.especialidad.nomb_especialidad
             if ingreso.especialidad else None
         ),
+
+        "codigo_especialidad": (
+            ingreso.especialidad.codigo_especialidad
+            if ingreso.especialidad else None
+        ),
+
         "sede": ingreso.sede.nomb_sede if ingreso.sede else None,
     }
     if incluir_matriculas:
@@ -1422,11 +1437,14 @@ def _guardar_reporte_validacion(nombre_archivo, reporte, huella_archivo, conteni
 
 
 def _aplicar_correcciones_pendientes(id_carga, df):
-    correcciones = CorreccionReporte.query.filter_by(id_carga=id_carga).all()
-    for correccion in correcciones:
-        campo = correccion.campo
-        if campo in df.columns:
-            df[campo] = correccion.valor
+    for c in CorreccionReporte.query.filter_by(id_carga=id_carga).all():
+        if c.campo not in df.columns or not c.filas:
+            continue
+        df[c.campo] = df[c.campo].astype(object)
+        for fila_excel in c.filas:
+            indice = fila_excel - 2          # fila_excel = índice + 2
+            if indice in df.index:
+                df.at[indice, c.campo] = c.valor
     return df
 
 
@@ -1573,28 +1591,61 @@ def _procesar_fila(fila):
         fila.get("Colegio-procedencia")
     )
 
-    if colegio_procedencia is not None:
+    nombre_colegio = convertir_none(
+        fila.get("Nombre del colegio de procedencia")
+    )
 
-        colegio = obtener_o_crear(
-            Colegio,
-            filtros={
-                "nomb_colegio": convertir_none(
-                    fila.get("Nombre del colegio de procedencia")
-                ),
-                "distrito_colegio": convertir_none(
-                    fila.get("Distrito del colegio de procedencia")
-                ),
-            },
-            extra={
-                "colegio_procedencia": convertir_none(
-                    fila.get("Colegio-procedencia")
-                ),
-                "tipo_procedencia": convertir_none(
-                    fila.get("Tipo colegio de procedencia")
-                ),
-            },
-            cambios=cambios,
-        )
+    tipo_colegio = convertir_none(
+        fila.get("Tipo colegio de procedencia")
+    )
+
+    distrito_colegio = convertir_none(
+        fila.get("Distrito del colegio de procedencia")
+    )
+
+    print("\n========== DEBUG COLEGIO ==========")
+    print("Código:", repr(colegio_procedencia))
+    print("Tipo:", repr(tipo_colegio))
+    print("Nombre:", repr(nombre_colegio))
+    print("Distrito:", repr(distrito_colegio))
+    print("===================================\n")
+
+    # Crear o buscar el colegio cuando se dispone
+    # de su nombre y distrito.
+
+    if nombre_colegio is not None and distrito_colegio is not None:
+
+        # Buscar ignorando diferencias entre mayúsculas,
+        # minúsculas y espacios al inicio o al final.
+        colegio = Colegio.query.filter(
+            func.upper(func.trim(Colegio.nomb_colegio))
+            == str(nombre_colegio).strip().upper(),
+
+            func.upper(func.trim(Colegio.distrito_colegio))
+            == str(distrito_colegio).strip().upper()
+        ).order_by(Colegio.id_colegio.asc()).first()
+
+        # Si no existe, crear el registro.
+        if colegio is None:
+            colegio = obtener_o_crear(
+                Colegio,
+                filtros={
+                    "nomb_colegio": nombre_colegio,
+                    "distrito_colegio": distrito_colegio,
+                },
+                extra={
+                    "colegio_procedencia": colegio_procedencia,
+                    "tipo_procedencia": tipo_colegio,
+                },
+                cambios=cambios,
+            )
+
+    if colegio is not None:
+        print("ID del colegio encontrado:", colegio.id_colegio)
+        print("Nombre:", colegio.nomb_colegio)
+        print("Distrito:", colegio.distrito_colegio)
+    else:
+        print("No se pudo asociar un colegio a este estudiante.")
 
     # ---------- Ubigeo ----------
     ubigeo = obtener_o_crear(
@@ -1792,7 +1843,15 @@ def _procesar_fila(fila):
             fila.get("Año en que concluyó la secundaria")
         ),
 
-        "id_colegio": colegio.id_colegio if colegio else None,
+        "id_colegio": (
+            colegio.id_colegio
+            if colegio is not None
+            else (
+                estudiante.id_colegio
+                if estudiante is not None
+                else None
+            )
+        ),
 
         "id_movilidad": movilidad.id_movilidad if movilidad else None,
 
