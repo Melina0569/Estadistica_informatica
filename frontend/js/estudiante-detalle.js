@@ -1,3 +1,8 @@
+function formatearPeriodo(valor) {
+  const texto = String(valor ?? "").trim();
+  return /^\d{5}$/.test(texto) ? `${texto.slice(0, 4)}-${texto.slice(4)}` : texto;
+}
+
 function escDetalle(valor) {
   return String(valor ?? "").replace(/[&<>"']/g, (caracter) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -54,10 +59,10 @@ function renderizarMatricula(matricula, indice, periodosGuardados, abierta = fal
     ["Modalidad de estudio", matricula.modalidad_estudio],
     ["Ciclo / año de estudios", matricula.ciclo],
     ["Permanencia", matricula.permanencia],
-    ["Primer periodo", matricula.primer_mat],
-    ["Periodo", matricula.periodo_mat],
+    ["Primer periodo", formatearPeriodo(matricula.primer_mat)],
+    ["Periodo", formatearPeriodo(matricula.periodo_mat)],
     ["Régimen", matricula.regimen_matricula],
-    ["Créditos acumulados del semestre", matricula.creditos_acum_sem],
+    ["Créditos matriculados en el semestre", matricula.creditos_acum_sem],
     ["Créditos acumulados total", matricula.creditos_acum_total],
     ["Cursos matriculados/aprobados", matricula.cursos_mat_cat],
     ["Promedio ponderado", matricula.promedio_pond],
@@ -72,7 +77,7 @@ function renderizarMatricula(matricula, indice, periodosGuardados, abierta = fal
           <span>
             <small>Periodo académico:</small>
             <span class="historial-periodo-year">
-              <strong>${escDetalle(matricula.periodo_mat) || "Sin periodo"}</strong>
+              <strong>${escDetalle(formatearPeriodo(matricula.periodo_mat)) || "Sin periodo"}</strong>
               <small class="historial-periodo-ingreso">ID: ${escDetalle(matricula.id_ingreso) || "—"}</small>
             </span>
           </span>
@@ -102,11 +107,15 @@ function renderizarIngresoUniversitario(ingreso) {
       </div>
       <dl class="universidad-fields">
         ${listaCamposDetalle([
-          ["Facultad", ingreso.facultad],
-          ["Código de programa", ingreso.cod_prog],
-          ["Especialidad", ingreso.especialidad],
-          ["Modalidad de ingreso", ingreso.modalidad_ingreso],
-          ["Sede", ingreso.sede],
+            ["Facultad", ingreso.facultad],
+            ["Código de programa", ingreso.cod_prog],
+            ["Nombre de la especialidad", ingreso.especialidad],
+            ["Código de especialidad", ingreso.codigo_especialidad],
+            ["Tipo de preparación", ingreso.tipo_preparacion],
+            ["Modalidad de ingreso", ingreso.modalidad_ingreso],
+            ["Periodo de ingreso", formatearPeriodo(ingreso.periodo_ingreso)],
+            ["Sede", ingreso.sede],
+            ["Locales", ingreso.sede && ingreso.sede.locales ? ingreso.sede.locales.map((l) => l.nomb_local).join(", ") : "No hay locales"],
         ])}
       </dl>
     </article>
@@ -119,7 +128,10 @@ function claveIngresoUniversitario(ingreso) {
     ingreso.facultad,
     ingreso.cod_prog,
     ingreso.especialidad,
+    ingreso.codigo_especialidad,
+    ingreso.tipo_preparacion,
     ingreso.modalidad_ingreso,
+    ingreso.periodo_ingreso,
     ingreso.sede,
   ].map(normalizarValorIngreso).join("|");
 }
@@ -213,6 +225,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             ["Fecha de nacimiento", estudiante.fecha_nac],
             ["Nacionalidad", estudiante.nacionalidad],
             ["Estado civil", estudiante.estado_civil],
+            ["Distrito del domicilio", estudiante.distrito_domicilio],
+            ["Identidad étnica", estudiante.identi_etnica],
+            ["Lengua nativa", estudiante.lengua_nativa],
+            ["Idioma extranjero", estudiante.idioma_extranjero],
             ["Correo institucional", estudiante.correo_inst],
             ["Correo personal", estudiante.correo_per],
             ["Teléfono fijo", estudiante.telefono_fijo],
@@ -224,7 +240,6 @@ document.addEventListener("DOMContentLoaded", async () => {
               <h2><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Datos de procedencia</h2>
               <dl class="detalle-fields">
                 ${listaCamposDetalle([
-            ["Colegio de procedencia", estudiante.colegio],
             ["Beca", estudiante.beca],
             ["Discapacidad", estudiante.discapacidad],
             ["Movilidad", estudiante.movilidad],
@@ -232,6 +247,24 @@ document.addEventListener("DOMContentLoaded", async () => {
             ["Departamento de nacimiento", estudiante.ubigeo && estudiante.ubigeo.dep_nac],
             ["Provincia de nacimiento", estudiante.ubigeo && estudiante.ubigeo.provincia_nac],
             ["Distrito de nacimiento", estudiante.ubigeo && estudiante.ubigeo.distrito_nac],
+                ])}
+              </dl>
+            </section>
+            <section class="detalle-card">
+              <h2>
+                <span class="material-symbols-outlined" aria-hidden="true">
+                  info
+                </span>
+                Estudios secundarios
+              </h2>
+
+              <dl class="detalle-fields">
+                ${listaCamposDetalle([
+                    ["Nombre de la institución", estudiante.colegio?.nomb_colegio],
+                    ["Código de procedencia", estudiante.colegio?.colegio_procedencia],
+                    ["Tipo de institución", estudiante.colegio?.tipo_procedencia],
+                    ["Distrito de la institución", estudiante.colegio?.distrito_colegio],
+                    ["Año de conclusión de secundaria", estudiante.anio_fin_sec],
                 ])}
               </dl>
             </section>

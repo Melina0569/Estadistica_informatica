@@ -2,8 +2,11 @@ const indicador$ = (id) => document.getElementById(id);
 let indicadoresDatos = null;
 let opcionesIndicadores = null;
 let estadoGrafico = null;
+let seriesPeriodoSeleccionadas = [];
+let solicitudIndicadoresActual = 0;
 
 const formatoNumero = (valor) => Number(valor || 0).toLocaleString("es-PE");
+const normalizarIndicador = (valor) => String(valor ?? "").trim().toLocaleLowerCase();
 const escaparIndicador = (valor) => String(valor ?? "").replace(/[&<>"']/g, (c) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
 }[c]));
@@ -38,6 +41,23 @@ function actualizarFiltrosAcademicos() {
   llenarSelect("builder-carrera", carreras, "Todas las carreras");
 }
 
+function actualizarFiltrosResumen() {
+  const facultad = indicador$("filtro-facultad").value;
+  const programa = indicador$("filtro-programa").value;
+  const programas = (opcionesIndicadores.programas || []).filter((fila) => (
+    !facultad || fila.facultad === facultad
+  ));
+  const carreras = (opcionesIndicadores.carreras || []).filter((fila) => (
+    (!facultad || fila.facultad === facultad) &&
+    (!programa || fila.programa === programa)
+  ));
+  llenarSelect("filtro-programa", programas, "Todas las carreras y programas");
+  if (programas.some((fila) => fila.valor === programa)) {
+    indicador$("filtro-programa").value = programa;
+  }
+  llenarSelect("filtro-carrera", carreras, "Todas las carreras");
+}
+
 function pintarBarras(id, filas) {
   const maximo = Math.max(...filas.map((fila) => fila.total), 1);
   indicador$(id).innerHTML = filas.map((fila) => `
@@ -47,6 +67,170 @@ function pintarBarras(id, filas) {
       <div class="bar-track"><div class="bar-fill" style="width:${fila.total / maximo * 100}%"></div></div>
     </div>
   `).join("") || "<p>No hay datos para mostrar.</p>";
+}
+
+function pintarDistribucion(datos) {
+  const facultad = indicador$("filtro-facultad").value;
+
+  // Si no se ha seleccionado una facultad, mostrar un mensaje.
+  if (!facultad) {
+    indicador$("distribucion-titulo").textContent =
+      "Estudiantes por carrera o escuela";
+
+    indicador$("distribucion-subtitulo").textContent =
+      "Seleccione una facultad para visualizar sus carreras.";
+
+    indicador$("facultades-chart").innerHTML =
+      "<p>Seleccione una facultad para consultar los estudiantes.</p>";
+
+    return;
+  }
+
+  // Obtener únicamente las carreras de la facultad seleccionada.
+  const facultadSeleccionada = (datos.por_facultad || []).find(
+    (fila) => normalizarIndicador(fila.nombre) === normalizarIndicador(facultad)
+  );
+
+  const filas = facultadSeleccionada?.carreras || [];
+  const maximo = Math.max(...filas.map((fila) => Number(fila.total || 0)), 1);
+  const ancho = 760;
+  const alto = Math.max(270, Math.min(440, 150 + filas.length * 5));
+  const margen = { arriba: 18, derecha: 14, abajo: 78, izquierda: 48 };
+  const anchoPlot = ancho - margen.izquierda - margen.derecha;
+  const altoPlot = alto - margen.arriba - margen.abajo;
+  const paso = anchoPlot / Math.max(filas.length, 1);
+  const anchoBarra = Math.max(8, Math.min(34, paso * .68));
+  indicador$("distribucion-titulo").textContent =
+    "Estudiantes por carrera o programa";
+
+  indicador$("distribucion-subtitulo").textContent =
+    `Carreras o programas de ${facultad}.`;
+  if (!filas.length) {
+    indicador$("facultades-chart").innerHTML = "<p>No hay datos para mostrar.</p>";
+    return;
+  }
+  const etiquetas = filas.map((fila, indice) => {
+    const nombre = String(fila.nombre || "Sin categoría");
+    const x = margen.izquierda + paso * indice + paso / 2;
+    const y = margen.arriba + altoPlot - Number(fila.total || 0) / maximo * altoPlot;
+    const color = ["#0876ea", "#7553e8", "#0db28b", "#f59e0b"][indice % 4];
+    return `
+      <g class="distribution-bar">
+        <title>${escaparIndicador(nombre)}: ${formatoNumero(fila.total)}</title>
+        <rect x="${x - anchoBarra / 2}" y="${y}" width="${anchoBarra}" height="${Math.max(0, altoPlot - (y - margen.arriba))}" rx="3" fill="${color}"/>
+        <text x="${x}" y="${Math.max(margen.arriba + 11, y - 6)}">${escaparIndicador(formatoNumero(fila.total))}</text>
+        <text class="distribution-label" transform="translate(${x},${alto - 12}) rotate(-42)">${escaparIndicador(nombre.slice(0, 24))}</text>
+      </g>
+    `;
+  }).join("");
+  const guias = [0, 1, 2, 3, 4].map((nivel) => {
+    const y = margen.arriba + altoPlot - altoPlot * nivel / 4;
+    return `<line x1="${margen.izquierda}" y1="${y}" x2="${ancho - margen.derecha}" y2="${y}"/>
+      <text class="distribution-tick" x="${margen.izquierda - 8}" y="${y + 4}">${formatoNumero(maximo * nivel / 4)}</text>`;
+  }).join("");
+  indicador$("facultades-chart").innerHTML = `
+    <svg class="distribution-chart" viewBox="0 0 ${ancho} ${alto}" role="img"
+      aria-label="${escaparIndicador(facultad ? "Estudiantes por carrera o programa" : "Estudiantes por facultad")}">
+      ${guias}${etiquetas}
+    </svg>
+  `;
+}
+
+function pintarSeriesPeriodos(series, anios) {
+  const selector = indicador$("periodos-selector");
+  const seriesOrdenadas = [...series].sort((a, b) => (
+    Math.max(...b.puntos.map((punto) => Number(punto.total || 0)), 0)
+    - Math.max(...a.puntos.map((punto) => Number(punto.total || 0)), 0)
+  ));
+  const maxSeries = 8;
+  const nombres = seriesOrdenadas.map((linea) => linea.nombre);
+  const seleccionActual = seriesPeriodoSeleccionadas.filter((nombre) => nombres.includes(nombre));
+  seriesPeriodoSeleccionadas = seleccionActual.length
+    ? seleccionActual
+    : nombres.slice(0, maxSeries);
+  selector.hidden = seriesOrdenadas.length <= maxSeries;
+  if (!selector.hidden) {
+    selector.innerHTML = `
+      <span>Comparar:</span>
+      ${seriesOrdenadas.map((linea) => `
+        <label><input type="checkbox" value="${escaparIndicador(linea.nombre)}"
+          ${seriesPeriodoSeleccionadas.includes(linea.nombre) ? "checked" : ""}/>
+          ${escaparIndicador(linea.nombre)}</label>
+      `).join("")}
+    `;
+    selector.querySelectorAll("input").forEach((entrada) => entrada.addEventListener("change", () => {
+      seriesPeriodoSeleccionadas = [...selector.querySelectorAll("input:checked")].map((item) => item.value);
+      pintarSeriesPeriodos(series, anios);
+    }));
+  } else {
+    selector.innerHTML = "";
+  }
+  const puntosPorSerie = seriesOrdenadas
+    .filter((linea) => seriesPeriodoSeleccionadas.includes(linea.nombre))
+    .map((linea) => ({
+      ...linea,
+      puntos: anios.map((anio) => {
+        const punto = linea.puntos.find((item) => String(item.periodo).slice(0, 4) === anio);
+        return punto && punto.total !== null && punto.total !== undefined
+          ? Number(punto.total)
+          : null;
+      }),
+    }));
+  const maximo = Math.max(
+    ...puntosPorSerie.flatMap((linea) => linea.puntos.filter((total) => total !== null)),
+    1,
+  );
+  const ancho = 760;
+  const alto = 285;
+  const margen = { arriba: 18, derecha: 22, abajo: 58, izquierda: 54 };
+  const anchoPlot = ancho - margen.izquierda - margen.derecha;
+  const altoPlot = alto - margen.arriba - margen.abajo;
+  const paso = anchoPlot / Math.max(anios.length - 1, 1);
+  const etiquetaCada = Math.max(1, Math.ceil(58 / Math.max(paso, 1)));
+  const colores = ["#0876ea", "#7553e8", "#0db28b", "#f59e0b", "#f04eaf", "#14a3b8"];
+  indicador$("periodos-chart").innerHTML = `
+    <svg class="period-line" viewBox="0 0 ${ancho} ${alto}" role="img"
+      aria-label="Ingresos por periodo">
+      ${[0, 1, 2, 3, 4].map((nivel) => {
+        const y = margen.arriba + altoPlot - nivel * altoPlot / 4;
+        return `<line x1="${margen.izquierda}" y1="${y}" x2="${ancho - margen.derecha}" y2="${y}" />
+          <text class="period-tick" x="${margen.izquierda - 9}" y="${y + 4}">${formatoNumero(maximo * nivel / 4)}</text>`;
+      }).join("")}
+      ${puntosPorSerie.map((linea, serieIndice) => {
+        const color = colores[serieIndice % colores.length];
+        const segmentos = [];
+        let segmento = [];
+        linea.puntos.forEach((total, indice) => {
+          if (total === null) {
+            if (segmento.length) segmentos.push(segmento);
+            segmento = [];
+            return;
+          }
+          segmento.push(`${margen.izquierda + indice * paso},${margen.arriba + altoPlot - total / maximo * altoPlot}`);
+        });
+        if (segmento.length) segmentos.push(segmento);
+        return `
+        ${segmentos.map((puntos) => `
+          <polyline class="period-series" stroke="${color}" points="${puntos.join(" ")}" />
+        `).join("")}
+        ${linea.puntos.map((total, indice) => total === null ? "" : `
+          <circle class="period-point" fill="${colores[serieIndice % colores.length]}"
+            cx="${margen.izquierda + indice * paso}" cy="${margen.arriba + altoPlot - total / maximo * altoPlot}" r="4">
+            <title>${escaparIndicador(linea.nombre)} · ${escaparIndicador(anios[indice])}: ${formatoNumero(total)}</title>
+          </circle>
+        `).join("")}
+      `;
+      }).join("")}
+      ${anios.map((anio, indice) => `
+        ${indice % etiquetaCada === 0 || indice === anios.length - 1
+          ? `<text class="period-label" transform="translate(${margen.izquierda + indice * paso},${alto - 18}) rotate(-35)">${escaparIndicador(anio)}</text>`
+          : ""}
+      `).join("")}
+    </svg>
+    <div class="period-legend">${puntosPorSerie.map((linea, indice) => `
+      <span><i style="background:${colores[indice % colores.length]}"></i>${escaparIndicador(linea.nombre)}</span>
+    `).join("")}</div>
+  `;
 }
 
 function filasSeleccionadas() {
@@ -79,10 +263,29 @@ function parametrosTabla() {
   };
 }
 
+function parametrosResumen() {
+  return {
+    facultad: indicador$("filtro-facultad").value,
+    programa: indicador$("filtro-programa").value,
+    carrera: indicador$("filtro-carrera").value,
+    periodo: indicador$("filtro-periodo").value,
+    nivel_academico: indicador$("filtro-nivel-academico").value,
+    grado_posgrado: indicador$("filtro-posgrado").value,
+    anio_desde: indicador$("filtro-anio-desde").value,
+    anio_hasta: indicador$("filtro-anio-hasta").value,
+  };
+}
+
+function etiquetaDimension(nombre) {
+  return indicador$("builder-dimension").value === "periodo"
+    ? formatearPeriodo(nombre)
+    : nombre;
+}
+
 function datosGrafico(filas) {
   const metrica = indicador$("builder-metrica").value;
   const datos = filas.map((fila) => ({
-    nombre: fila.nombre,
+    nombre: etiquetaDimension(fila.nombre),
     valor: metrica === "participacion"
       ? Number(fila.participacion || 0)
       : Number(fila.total || 0),
@@ -350,7 +553,9 @@ function renderizarDetalle(datos) {
     <table>
       <thead><tr>${columnas.map((columna) => `<th>${escaparIndicador(columna)}</th>`).join("")}</tr></thead>
       <tbody>${(datos.filas || []).map((fila) => `
-        <tr>${columnas.map((columna) => `<td>${escaparIndicador(fila[columna])}</td>`).join("")}</tr>
+        <tr>${columnas.map((columna) => `<td>${escaparIndicador(
+              /periodo/i.test(columna) ? formatearPeriodo(fila[columna]) : fila[columna]
+                    )}</td>`).join("")}</tr>
       `).join("")}</tbody>
     </table>
   `;
@@ -408,7 +613,7 @@ async function generarTabla({ desplazar = true } = {}) {
       <table>
         <thead><tr><th>Dimensión</th><th>${encabezado}</th></tr></thead>
         <tbody>${filas.map((fila) => `
-          <tr><td>${escaparIndicador(fila.nombre)}</td><td>${
+          <tr><td>${escaparIndicador(etiquetaDimension(fila.nombre))}</td><td>${
             metrica === "participacion"
               ? `${fila.participacion.toFixed(2)}%`
               : formatoNumero(fila.total)
@@ -437,6 +642,14 @@ async function generarTabla({ desplazar = true } = {}) {
 function pintarIndicadores(datos) {
   indicadoresDatos = datos;
   const kpis = datos.kpis;
+  const anios = datos.anios || [];
+  ["filtro-anio-desde", "filtro-anio-hasta"].forEach((id) => {
+    indicador$(id).innerHTML = anios.map((anio) => (
+      `<option value="${escaparIndicador(anio)}">${escaparIndicador(anio)}</option>`
+    )).join("");
+  });
+  if (datos.anio_desde) indicador$("filtro-anio-desde").value = datos.anio_desde;
+  if (datos.anio_hasta) indicador$("filtro-anio-hasta").value = datos.anio_hasta;
   indicador$("kpi-estudiantes").textContent = formatoNumero(kpis.estudiantes);
   indicador$("kpi-ingresos").textContent = formatoNumero(kpis.programas);
   indicador$("kpi-matriculas").textContent = formatoNumero(kpis.matriculas);
@@ -446,18 +659,22 @@ function pintarIndicadores(datos) {
     const nodo = indicador$(`modulo-${modulo}`);
     if (nodo) nodo.textContent = formatoNumero(total);
   });
-  pintarBarras("facultades-chart", datos.por_facultad);
-  pintarBarras("periodos-chart", datos.por_periodo);
-  const totalBecas = datos.por_beca.reduce((total, fila) => total + Number(fila.total || 0), 0);
-  indicador$("becas-list").innerHTML = datos.por_beca.map((fila, indice) => {
-    const porcentaje = totalBecas ? (Number(fila.total || 0) / totalBecas) * 100 : 0;
+  pintarDistribucion(datos);
+  pintarSeriesPeriodos(datos.series_periodo || [], datos.anios_grafico || anios);
+  const totalGeneros = (datos.por_genero || []).reduce(
+    (total, fila) => total + Number(fila.total || 0),
+    0,
+  );
+  indicador$("genero-list").innerHTML = (datos.por_genero || []).map((fila, indice) => {
+    const porcentaje = totalGeneros
+      ? Number(fila.total || 0) / totalGeneros * 100
+      : 0;
     return `
-      <div class="legend-row beca-row">
-        <span class="legend-row-dot color-${indice % 5}"></span>
-        <span class="legend-row-name">${escaparIndicador(fila.nombre)}</span>
+      <div class="gender-row">
+        <span class="gender-dot color-${indice % 2}"></span>
+        <span>${escaparIndicador(fila.nombre)}</span>
         <strong>${formatoNumero(fila.total)}</strong>
-        <small>${porcentaje.toFixed(2)}%</small>
-        <span class="legend-row-track"><span style="width:${porcentaje}%"></span></span>
+        <small>${porcentaje.toFixed(1)}%</small>
       </div>
     `;
   }).join("");
@@ -465,13 +682,17 @@ function pintarIndicadores(datos) {
 }
 
 async function cargarIndicadores() {
+  const solicitud = ++solicitudIndicadoresActual;
   try {
-    const datos = await API.getIndicadores({
-      facultad: indicador$("filtro-facultad").value,
-      periodo: indicador$("filtro-periodo").value
-    });
+    const datos = await API.getIndicadores(parametrosResumen());
+    if (solicitud !== solicitudIndicadoresActual) {
+      return;
+    }
     pintarIndicadores(datos);
   } catch (error) {
+    if (solicitud !== solicitudIndicadoresActual) {
+      return;
+    }
     console.error("Error al cargar indicadores:", error);
     mostrarMensajeIndicador(error.message || "No se pudieron cargar los indicadores.", "error");
   }
@@ -481,32 +702,74 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await Promise.all([
       cargarComponente("sidebar", "/frontend/components/sidebar.html"),
-      cargarComponente("header", "/frontend/components/header.html")
+      cargarComponente("header", "/frontend/components/header.html"),
+      cargarComponente("footer", "/frontend/components/footer.html")
     ]);
     marcarNavActivo();
     iniciarReloj();
     const opciones = await API.opcionesConsulta();
+    const periodosFormateados = (opciones.periodos || []).map((p) => ({
+      valor: p.valor,
+      texto: formatearPeriodo(p.texto),
+    }));
     opcionesIndicadores = opciones;
     llenarSelect("filtro-facultad", opciones.facultades, "Todas las facultades");
-    llenarSelect("filtro-periodo", opciones.periodos, "Todos los periodos");
+    llenarSelect("filtro-programa", opciones.programas, "Todas las carreras y programas");
+    llenarSelect("filtro-carrera", opciones.carreras, "Todas las carreras");
+    llenarSelect("filtro-periodo", periodosFormateados, "Todos los periodos");
     llenarSelect("builder-facultad", opciones.facultades, "Todas las facultades");
     llenarSelect("builder-programa", opciones.programas, "Todos los programas");
     llenarSelect("builder-carrera", opciones.carreras, "Todas las carreras");
     llenarSelect("builder-genero", opciones.generos, "Todos los géneros");
     llenarSelect("builder-beca", opciones.becas, "Todas las becas");
-    llenarSelect("builder-periodo", opciones.periodos, "Todos los periodos");
+    llenarSelect("builder-periodo", periodosFormateados, "Todos los periodos");
     llenarSelect("builder-modalidad", opciones.estados_matricula, "Todas las modalidades");
     llenarSelect("builder-nivel", opciones.niveles, "Todos los niveles");
     llenarSelect("builder-ciclo", opciones.ciclos, "Todos los ciclos");
     await cargarIndicadores();
     indicador$("actualizar-indicadores").addEventListener("click", cargarIndicadores);
     indicador$("limpiar-indicadores").addEventListener("click", () => {
+      indicador$("filtro-nivel-academico").value = "";
+      indicador$("filtro-posgrado").value = "";
+      indicador$("filtro-posgrado-wrap").hidden = true;
       indicador$("filtro-facultad").value = "";
+      indicador$("filtro-programa").value = "";
+      indicador$("filtro-carrera").value = "";
       indicador$("filtro-periodo").value = "";
+      indicador$("filtro-anio-desde").value = "";
+      indicador$("filtro-anio-hasta").value = "";
       cargarIndicadores();
     });
-    indicador$("filtro-facultad").addEventListener("change", cargarIndicadores);
+    indicador$("filtro-facultad").addEventListener("change", () => {
+      indicador$("filtro-programa").value = "";
+      indicador$("filtro-carrera").value = "";
+      actualizarFiltrosResumen();
+      cargarIndicadores();
+    });
+    indicador$("filtro-programa").addEventListener("change", () => {
+      indicador$("filtro-carrera").value = "";
+      actualizarFiltrosResumen();
+      cargarIndicadores();
+    });
+    indicador$("filtro-carrera").addEventListener("change", cargarIndicadores);
     indicador$("filtro-periodo").addEventListener("change", cargarIndicadores);
+    ["filtro-anio-desde", "filtro-anio-hasta"].forEach((id) => {
+      indicador$(id).addEventListener("change", () => {
+        const desde = indicador$("filtro-anio-desde").value;
+        const hasta = indicador$("filtro-anio-hasta").value;
+        if (desde && hasta && desde > hasta) {
+          indicador$("filtro-anio-hasta").value = desde;
+        }
+        cargarIndicadores();
+      });
+    });
+    indicador$("filtro-posgrado").addEventListener("change", cargarIndicadores);
+    indicador$("filtro-nivel-academico").addEventListener("change", () => {
+      const esPosgrado = indicador$("filtro-nivel-academico").value === "posgrado";
+      indicador$("filtro-posgrado-wrap").hidden = !esPosgrado;
+      if (!esPosgrado) indicador$("filtro-posgrado").value = "";
+      cargarIndicadores();
+    });
     indicador$("builder-dimension").addEventListener("change", generarTabla);
     indicador$("builder-metrica").addEventListener("change", generarTabla);
     indicador$("builder-tipo").addEventListener("change", generarTabla);

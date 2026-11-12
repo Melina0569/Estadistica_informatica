@@ -71,7 +71,7 @@ async function abrirEditorEstudiante(estudiante) {
       });
       (ingreso.matriculas || []).forEach((matricula) => {
         CAMPOS_EDITABLES.matricula.forEach(([campo, texto]) => {
-          opciones.push(`<option value="matricula|${matricula.id_matricula}|${campo}">${texto} · matrícula ${matricula.periodo_mat}</option>`);
+          opciones.push(`<option value="matricula|${matricula.id_matricula}|${campo}">${texto} · matrícula ${formatearPeriodo(matricula.periodo_mat)}</option>`);
         });
       });
     });
@@ -266,7 +266,11 @@ async function cargarOpcionesConsulta() {
   const opciones = await API.opcionesConsulta();
   llenarOpciones("consulta-facultad", opciones.facultades, "Todas las facultades");
   llenarOpciones("consulta-programa", opciones.programas, "Todos los programas");
-  llenarOpciones("consulta-periodo", opciones.periodos, "Todos los semestres");
+  llenarOpciones(
+    "consulta-periodo",
+    opciones.periodos.map((p) => ({ valor: p.valor, texto: formatearPeriodo(p.texto) })),
+    "Todos los semestres"
+  );
   llenarOpciones("consulta-estado", opciones.estados_matricula, "Todos los estados");
   llenarOpciones("consulta-condicion", opciones.condiciones, "Todas las condiciones");
 

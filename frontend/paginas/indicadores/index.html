@@ -33,8 +33,14 @@
         <button class="indicator-tab" data-modulo="graduados_titulados" type="button"><img src="/frontend/assets/icons/Egresado_titulado.png" alt="" class="icono-modulo"> Graduados y titulados <strong id="modulo-graduados_titulados">0</strong></button>
       </nav>
       <section class="indicator-filters">
-        <label>Facultad<select id="filtro-facultad"><option value="">Todas las facultades</option></select></label>
+        <label>Nivel académico<select id="filtro-nivel-academico"><option value="">Todos</option><option value="pregrado">Pregrado</option><option value="posgrado">Posgrado</option></select></label>
+        <label id="filtro-posgrado-wrap" hidden>Grado<select id="filtro-posgrado"><option value="">Maestría y Doctorado</option><option value="maestria">Maestría</option><option value="doctorado">Doctorado</option></select></label>
+        <label>Facultad<select id="filtro-facultad" required><option value="">Seleccione una facultad</option></select></label>
+        <label>Carrera o programa<select id="filtro-programa"><option value="">Todas las carreras y programas</option></select></label>
+        <label>Carrera / escuela<select id="filtro-carrera"><option value="">Todas</option></select></label>
         <label>Periodo de ingreso<select id="filtro-periodo"><option value="">Todos los periodos</option></select></label>
+        <label>Año desde<select id="filtro-anio-desde"><option value="">—</option></select></label>
+        <label>Año hasta<select id="filtro-anio-hasta"><option value="">—</option></select></label>
         <button id="limpiar-indicadores" class="indicator-button secondary" type="button">Limpiar filtros</button>
       </section>
       <section class="kpi-grid">
@@ -62,11 +68,15 @@
           <strong id="kpi-facultades">0</strong>
           <small>Con estudiantes registrados</small>
         </article>
+        <article class="kpi-card gender-kpi">
+          <span>Distribución por género</span>
+          <img src="/frontend/assets/icons/Estudiante.png" alt="" class="kpi-icon">
+          <div id="genero-list" class="gender-list"></div>
+        </article>
       </section>
       <section class="indicator-grid">
-        <article class="indicator-card wide"><div class="card-heading"><div><h2>Estudiantes por facultad</h2><p>Distribución con ingreso registrado.</p></div></div><div id="facultades-chart" class="bars"></div></article>
-        <article class="indicator-card beca-card"><div class="card-heading"><div><h2>Distribución por beca</h2><p>Condición de beneficio registrada.</p></div><img src="/frontend/assets/icons/Exito.png" alt="" class="card-heading-icon"></div><div id="becas-list" class="legend-list"></div></article>
-        <article class="indicator-card wide"><div class="card-heading"><div><h2>Ingresos por periodo</h2><p>Estudiantes según periodo de ingreso.</p></div></div><div id="periodos-chart" class="bars compact"></div></article>
+        <article class="indicator-card wide"><div class="card-heading"><div><h2 id="distribucion-titulo">Estudiantes por facultad</h2><p id="distribucion-subtitulo">Estudiantes por facultad, ordenados de mayor a menor.</p></div></div><div id="facultades-chart" class="faculty-tree"></div></article>
+        <article class="indicator-card wide"><div class="card-heading"><div><h2>Evolución de ingresos por periodo</h2><p>Comparación histórica de cohortes de ingreso.</p></div></div><div id="periodos-selector" class="period-selector" hidden></div><div id="periodos-chart" class="bars compact"></div></article>
       </section>
       <section class="builder-card">
         <div class="card-heading"><div><h2>Constructor de tablas e indicadores a medida</h2><p>Genere un resumen agrupado o un reporte detallado con columnas y filtros propios.</p></div><span class="status-pill">Módulo activo</span></div>
@@ -118,6 +128,7 @@
         <div id="tabla-indicador" class="generated-table" hidden></div>
       </section>
     </main>
+    <div id="footer"></div>
   </div>
   <script src="/frontend/js/api.js"></script><script src="/frontend/js/app.js"></script><script src="/frontend/js/indicadores.js"></script>
 </body>
