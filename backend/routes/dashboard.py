@@ -503,7 +503,7 @@ def obtener_resumen():
                 HistorialCarga.nombre_archivo,
                 func.max(HistorialCarga.id_carga).label("id_carga"),
             )
-            .filter(HistorialCarga.estado != "Eliminado")
+            .filter(HistorialCarga.estado.notin_(("Eliminado", "Descartada")))
             .group_by(HistorialCarga.nombre_archivo)
             .subquery()
         )
@@ -550,7 +550,7 @@ def obtener_resumen():
             carga.inconsistencias or 0
             for carga in cargas
             if (carga.estado or "").strip().lower()
-            in ("en corrección", "en revision", "en revisión", "observado")
+            in ("analizada", "en corrección", "en revision", "en revisión", "observado")
         )
 
         periodo = _periodo_academico_actual()

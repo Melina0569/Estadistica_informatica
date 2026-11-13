@@ -4,6 +4,15 @@ let consultaTotalPaginas = 1;
 let estudianteEdicionActual = null;
 let datosEdicionActual = null;
 
+// Formatear periodos académicos
+function formatearPeriodo(valor) {
+    const texto = String(valor ?? "").trim();
+
+    return /^\d{5}$/.test(texto)
+        ? `${texto.slice(0, 4)}-${texto.slice(4)}`
+        : texto;
+}
+
 const CAMPOS_EDITABLES = {
   estudiante: [
     ["tipo_doc_id", "Tipo de documento"], ["num_dni", "Número de documento"],

@@ -28,7 +28,6 @@ const progresoPorcentaje = document.getElementById("progreso-porcentaje");
 const progresoBarra = document.getElementById("progreso-barra");
 const progresoDetalle = document.getElementById("progreso-detalle");
 const progresoTrack = progresoCarga.querySelector("[role='progressbar']");
-const actualizarAnalisisBtn = document.getElementById("actualizar-analisis-btn");
 const entitySelectorGroup = document.getElementById("entity-selector-group");
 const carouselViewport = document.querySelector(".carga-carousel-viewport");
 const carouselControls = document.querySelectorAll("[data-carousel-direction]");
@@ -39,7 +38,6 @@ let progresoIntervalo = null;
 let progresoActual = 0;
 let carruselIndice = 0;
 let carruselIntervalo = null;
-let seleccionarArchivoParaActualizar = false;
 const CLAVE_REPORTE_CARGA = "dataunmsm.ultimoReporteCarga";
 
 function escapar(texto) {
@@ -421,13 +419,10 @@ iniciarCarrusel();
 
 archivoInput.addEventListener("change", () => {
     limpiarResultado();
+
     if (archivoInput.files[0]) {
         eliminarReporteGuardado();
         mostrarArchivo(archivoInput.files[0]);
-        if (seleccionarArchivoParaActualizar) {
-            seleccionarArchivoParaActualizar = false;
-            cargaForm.requestSubmit();
-        }
     }
 });
 
@@ -536,7 +531,17 @@ confirmarBtn.addEventListener("click", async () => {
     }
 });
 
-limpiarBtn.addEventListener("click", () => {
+limpiarBtn.addEventListener("click", async () => {
+    limpiarBtn.disabled = true;
+    try {
+        await API.descartarAnalisis();
+    } catch (error) {
+        console.error(error);
+        window.alert("No se pudo limpiar el análisis guardado en el servidor.");
+        limpiarBtn.disabled = false;
+        return;
+    }
+    cancelarProgreso();
     archivoInput.value = "";
     eliminarReporteGuardado();
     fileName.hidden = true;
@@ -544,19 +549,8 @@ limpiarBtn.addEventListener("click", () => {
     dropTitle.textContent = "Arrastra un archivo aquí o explora tu equipo";
     dropDescription.textContent = "La validación se ejecutará antes de guardar cualquier registro.";
     limpiarResultado();
-});
-
-actualizarAnalisisBtn.addEventListener("click", () => {
-    if (archivoInput.files[0]) {
-        cargaForm.requestSubmit();
-        return;
-    }
-
-    seleccionarArchivoParaActualizar = true;
-    resultadoMensaje.className = "carga-message visible";
-    resultadoMensaje.textContent =
-        "Para actualizar este análisis, vuelve a seleccionar el archivo original.";
-    archivoInput.click();
+    irCorrecciones.hidden = true;
+    limpiarBtn.disabled = false;
 });
 
 async function restaurarReporteDesdeBackend() {
@@ -604,6 +598,6 @@ restaurarReporteDesdeBackend().then(() => {
 if (new URLSearchParams(window.location.search).get("reanalizar") === "1") {
     resultadoMensaje.className = "carga-message visible";
     resultadoMensaje.textContent =
-        "Selecciona nuevamente el archivo corregido y pulsa «Actualizar análisis» para comprobar los cambios antes de confirmar la carga.";
+        "Selecciona nuevamente el archivo corregido y pulsa «Analizar archivo» para comprobar los cambios antes de confirmar la carga.";
     window.history.replaceState({}, document.title, window.location.pathname);
 }

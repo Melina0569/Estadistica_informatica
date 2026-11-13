@@ -5,6 +5,15 @@ let estadoGrafico = null;
 let seriesPeriodoSeleccionadas = [];
 let solicitudIndicadoresActual = 0;
 
+// Formatear periodos académicos
+function formatearPeriodo(valor) {
+    const texto = String(valor ?? "").trim();
+
+    return /^\d{5}$/.test(texto)
+        ? `${texto.slice(0, 4)}-${texto.slice(4)}`
+        : texto;
+}
+
 const formatoNumero = (valor) => Number(valor || 0).toLocaleString("es-PE");
 const normalizarIndicador = (valor) => String(valor ?? "").trim().toLocaleLowerCase();
 const escaparIndicador = (valor) => String(valor ?? "").replace(/[&<>"']/g, (c) => ({
@@ -71,166 +80,250 @@ function pintarBarras(id, filas) {
 
 function pintarDistribucion(datos) {
   const facultad = indicador$("filtro-facultad").value;
+  const facultades = datos.por_facultad || [];
+  const seleccionada = facultad
+    ? facultades.find((fila) =>
+        normalizarIndicador(fila.nombre) === normalizarIndicador(facultad))
+    : null;
 
-  // Si no se ha seleccionado una facultad, mostrar un mensaje.
-  if (!facultad) {
+  let filas;
+  if (facultad) {
+    filas = seleccionada?.carreras || [];
     indicador$("distribucion-titulo").textContent =
-      "Estudiantes por carrera o escuela";
-
+      "Estudiantes por carrera o programa";
     indicador$("distribucion-subtitulo").textContent =
-      "Seleccione una facultad para visualizar sus carreras.";
-
-    indicador$("facultades-chart").innerHTML =
-      "<p>Seleccione una facultad para consultar los estudiantes.</p>";
-
-    return;
+      `Distribución de estudiantes en ${facultad}.`;
+  } else {
+    filas = facultades;
+    indicador$("distribucion-titulo").textContent =
+      "Estudiantes por facultad";
+    indicador$("distribucion-subtitulo").textContent =
+      "Distribución de estudiantes registrados por facultad.";
   }
 
-  // Obtener únicamente las carreras de la facultad seleccionada.
-  const facultadSeleccionada = (datos.por_facultad || []).find(
-    (fila) => normalizarIndicador(fila.nombre) === normalizarIndicador(facultad)
-  );
-
-  const filas = facultadSeleccionada?.carreras || [];
-  const maximo = Math.max(...filas.map((fila) => Number(fila.total || 0)), 1);
-  const ancho = 760;
-  const alto = Math.max(270, Math.min(440, 150 + filas.length * 5));
-  const margen = { arriba: 18, derecha: 14, abajo: 78, izquierda: 48 };
-  const anchoPlot = ancho - margen.izquierda - margen.derecha;
-  const altoPlot = alto - margen.arriba - margen.abajo;
-  const paso = anchoPlot / Math.max(filas.length, 1);
-  const anchoBarra = Math.max(8, Math.min(34, paso * .68));
-  indicador$("distribucion-titulo").textContent =
-    "Estudiantes por carrera o programa";
-
-  indicador$("distribucion-subtitulo").textContent =
-    `Carreras o programas de ${facultad}.`;
+  const contenedor = indicador$("facultades-chart");
   if (!filas.length) {
-    indicador$("facultades-chart").innerHTML = "<p>No hay datos para mostrar.</p>";
+    contenedor.innerHTML =
+      '<p class="distribution-empty">No hay datos disponibles para los filtros seleccionados.</p>';
     return;
   }
-  const etiquetas = filas.map((fila, indice) => {
-    const nombre = String(fila.nombre || "Sin categoría");
-    const x = margen.izquierda + paso * indice + paso / 2;
-    const y = margen.arriba + altoPlot - Number(fila.total || 0) / maximo * altoPlot;
-    const color = ["#0876ea", "#7553e8", "#0db28b", "#f59e0b"][indice % 4];
-    return `
-      <g class="distribution-bar">
-        <title>${escaparIndicador(nombre)}: ${formatoNumero(fila.total)}</title>
-        <rect x="${x - anchoBarra / 2}" y="${y}" width="${anchoBarra}" height="${Math.max(0, altoPlot - (y - margen.arriba))}" rx="3" fill="${color}"/>
-        <text x="${x}" y="${Math.max(margen.arriba + 11, y - 6)}">${escaparIndicador(formatoNumero(fila.total))}</text>
-        <text class="distribution-label" transform="translate(${x},${alto - 12}) rotate(-42)">${escaparIndicador(nombre.slice(0, 24))}</text>
-      </g>
-    `;
-  }).join("");
-  const guias = [0, 1, 2, 3, 4].map((nivel) => {
-    const y = margen.arriba + altoPlot - altoPlot * nivel / 4;
-    return `<line x1="${margen.izquierda}" y1="${y}" x2="${ancho - margen.derecha}" y2="${y}"/>
-      <text class="distribution-tick" x="${margen.izquierda - 8}" y="${y + 4}">${formatoNumero(maximo * nivel / 4)}</text>`;
-  }).join("");
-  indicador$("facultades-chart").innerHTML = `
-    <svg class="distribution-chart" viewBox="0 0 ${ancho} ${alto}" role="img"
-      aria-label="${escaparIndicador(facultad ? "Estudiantes por carrera o programa" : "Estudiantes por facultad")}">
-      ${guias}${etiquetas}
-    </svg>
+
+  const ordenadas = [...filas]
+    .map((fila) => ({
+      nombre: fila.nombre || "Sin categoría",
+      total: Number(fila.total || 0),
+    }))
+    .sort((a, b) => b.total - a.total);
+  const total = ordenadas.reduce((suma, fila) => suma + fila.total, 0);
+  const maximo = Math.max(...ordenadas.map((fila) => fila.total), 1);
+
+  contenedor.innerHTML = `
+    <div class="distribution-list">
+      ${ordenadas.map((fila) => {
+        const porcentaje = total ? fila.total / total * 100 : 0;
+        const ancho = fila.total / maximo * 100;
+        return `
+          <div class="distribution-row" title="${escaparIndicador(fila.nombre)}: ${formatoNumero(fila.total)}">
+            <span class="distribution-name">${escaparIndicador(fila.nombre)}</span>
+            <div class="distribution-track" role="img"
+              aria-label="${escaparIndicador(fila.nombre)}: ${porcentaje.toFixed(1)}%">
+              <div class="distribution-fill" style="width:${ancho}%"></div>
+            </div>
+            <span class="distribution-value">${formatoNumero(fila.total)}
+              <small>${porcentaje.toFixed(1)}%</small>
+            </span>
+          </div>
+        `;
+      }).join("")}
+    </div>
   `;
 }
 
 function pintarSeriesPeriodos(series, anios) {
   const selector = indicador$("periodos-selector");
+  const chart = indicador$("periodos-chart");
+
   const seriesOrdenadas = [...series].sort((a, b) => (
-    Math.max(...b.puntos.map((punto) => Number(punto.total || 0)), 0)
-    - Math.max(...a.puntos.map((punto) => Number(punto.total || 0)), 0)
+    Math.max(...(b.puntos || []).map((p) => Number(p.total || 0)), 0) -
+    Math.max(...(a.puntos || []).map((p) => Number(p.total || 0)), 0)
   ));
-  const maxSeries = 8;
   const nombres = seriesOrdenadas.map((linea) => linea.nombre);
-  const seleccionActual = seriesPeriodoSeleccionadas.filter((nombre) => nombres.includes(nombre));
-  seriesPeriodoSeleccionadas = seleccionActual.length
-    ? seleccionActual
-    : nombres.slice(0, maxSeries);
-  selector.hidden = seriesOrdenadas.length <= maxSeries;
-  if (!selector.hidden) {
-    selector.innerHTML = `
-      <span>Comparar:</span>
-      ${seriesOrdenadas.map((linea) => `
-        <label><input type="checkbox" value="${escaparIndicador(linea.nombre)}"
-          ${seriesPeriodoSeleccionadas.includes(linea.nombre) ? "checked" : ""}/>
-          ${escaparIndicador(linea.nombre)}</label>
-      `).join("")}
-    `;
-    selector.querySelectorAll("input").forEach((entrada) => entrada.addEventListener("change", () => {
-      seriesPeriodoSeleccionadas = [...selector.querySelectorAll("input:checked")].map((item) => item.value);
-      pintarSeriesPeriodos(series, anios);
-    }));
-  } else {
-    selector.innerHTML = "";
-  }
-  const puntosPorSerie = seriesOrdenadas
-    .filter((linea) => seriesPeriodoSeleccionadas.includes(linea.nombre))
-    .map((linea) => ({
-      ...linea,
-      puntos: anios.map((anio) => {
-        const punto = linea.puntos.find((item) => String(item.periodo).slice(0, 4) === anio);
-        return punto && punto.total !== null && punto.total !== undefined
-          ? Number(punto.total)
-          : null;
-      }),
-    }));
-  const maximo = Math.max(
-    ...puntosPorSerie.flatMap((linea) => linea.puntos.filter((total) => total !== null)),
-    1,
+  const seleccionValida = seriesPeriodoSeleccionadas.filter(
+    (nombre) => nombres.includes(nombre)
   );
-  const ancho = 760;
-  const alto = 285;
-  const margen = { arriba: 18, derecha: 22, abajo: 58, izquierda: 54 };
-  const anchoPlot = ancho - margen.izquierda - margen.derecha;
-  const altoPlot = alto - margen.arriba - margen.abajo;
-  const paso = anchoPlot / Math.max(anios.length - 1, 1);
-  const etiquetaCada = Math.max(1, Math.ceil(58 / Math.max(paso, 1)));
-  const colores = ["#0876ea", "#7553e8", "#0db28b", "#f59e0b", "#f04eaf", "#14a3b8"];
-  indicador$("periodos-chart").innerHTML = `
-    <svg class="period-line" viewBox="0 0 ${ancho} ${alto}" role="img"
-      aria-label="Ingresos por periodo">
-      ${[0, 1, 2, 3, 4].map((nivel) => {
-        const y = margen.arriba + altoPlot - nivel * altoPlot / 4;
-        return `<line x1="${margen.izquierda}" y1="${y}" x2="${ancho - margen.derecha}" y2="${y}" />
-          <text class="period-tick" x="${margen.izquierda - 9}" y="${y + 4}">${formatoNumero(maximo * nivel / 4)}</text>`;
-      }).join("")}
-      ${puntosPorSerie.map((linea, serieIndice) => {
-        const color = colores[serieIndice % colores.length];
-        const segmentos = [];
-        let segmento = [];
-        linea.puntos.forEach((total, indice) => {
-          if (total === null) {
-            if (segmento.length) segmentos.push(segmento);
-            segmento = [];
-            return;
-          }
-          segmento.push(`${margen.izquierda + indice * paso},${margen.arriba + altoPlot - total / maximo * altoPlot}`);
-        });
-        if (segmento.length) segmentos.push(segmento);
-        return `
-        ${segmentos.map((puntos) => `
-          <polyline class="period-series" stroke="${color}" points="${puntos.join(" ")}" />
-        `).join("")}
-        ${linea.puntos.map((total, indice) => total === null ? "" : `
-          <circle class="period-point" fill="${colores[serieIndice % colores.length]}"
-            cx="${margen.izquierda + indice * paso}" cy="${margen.arriba + altoPlot - total / maximo * altoPlot}" r="4">
-            <title>${escaparIndicador(linea.nombre)} · ${escaparIndicador(anios[indice])}: ${formatoNumero(total)}</title>
-          </circle>
-        `).join("")}
-      `;
-      }).join("")}
-      ${anios.map((anio, indice) => `
-        ${indice % etiquetaCada === 0 || indice === anios.length - 1
-          ? `<text class="period-label" transform="translate(${margen.izquierda + indice * paso},${alto - 18}) rotate(-35)">${escaparIndicador(anio)}</text>`
-          : ""}
+
+  if (!window.seriesPeriodoInicializada) {
+    // Primera carga: mostrar las 7 facultades con mayor volumen.
+    seriesPeriodoSeleccionadas = nombres.slice(0, 7);
+    window.seriesPeriodoInicializada = true;
+  } else {
+    // Mantener la selección que haya realizado el usuario.
+    seriesPeriodoSeleccionadas = seleccionValida;
+  }
+
+  selector.hidden = seriesOrdenadas.length === 0;
+  selector.innerHTML = `
+    <div class="period-filter-head">
+      <div>
+        <span class="period-filter-icon material-symbols-outlined" aria-hidden="true">account_balance</span>
+        <div>
+          <strong>Facultades</strong>
+          <small>Selecciona las series que deseas comparar</small>
+        </div>
+      </div>
+      <span class="period-selected-count">${seriesPeriodoSeleccionadas.length} de ${nombres.length}</span>
+    </div>
+    <label class="period-search">
+      <span class="material-symbols-outlined" aria-hidden="true">search</span>
+      <input type="search" id="buscar-facultad-periodo" placeholder="Buscar facultad..." autocomplete="off">
+    </label>
+    <div class="period-selector-actions">
+      <button type="button" data-period-action="all">Seleccionar todas</button>
+      <button type="button" data-period-action="clear">Limpiar</button>
+    </div>
+    <div class="period-check-list">
+      ${seriesOrdenadas.map((linea, indice) => `
+        <label class="period-check-option" data-facultad="${escaparIndicador(linea.nombre).toLocaleLowerCase()}">
+          <input type="checkbox" value="${escaparIndicador(linea.nombre)}"
+            ${seriesPeriodoSeleccionadas.includes(linea.nombre) ? "checked" : ""}>
+          <span class="period-check-mark"></span>
+          <span class="period-check-name" title="${escaparIndicador(linea.nombre)}">${escaparIndicador(linea.nombre)}</span>
+        </label>
       `).join("")}
-    </svg>
-    <div class="period-legend">${puntosPorSerie.map((linea, indice) => `
-      <span><i style="background:${colores[indice % colores.length]}"></i>${escaparIndicador(linea.nombre)}</span>
-    `).join("")}</div>
+    </div>
+    <p class="period-selector-hint">Puedes seleccionar varias facultades para comparar su evolución.</p>
   `;
+
+  const actualizarSeleccion = () => {
+    seriesPeriodoSeleccionadas = [...selector.querySelectorAll(".period-check-option input:checked")]
+      .map((entrada) => entrada.value);
+    selector.querySelector(".period-selected-count").textContent =
+      `${seriesPeriodoSeleccionadas.length} de ${nombres.length}`;
+    dibujarSeriesSeleccionadas(seriesOrdenadas, anios);
+  };
+
+  selector.querySelectorAll(".period-check-option input").forEach((entrada) => {
+    entrada.addEventListener("change", actualizarSeleccion);
+  });
+
+  selector.querySelector('[data-period-action="all"]').addEventListener("click", () => {
+    selector.querySelectorAll(".period-check-option").forEach((opcion) => {
+      opcion.hidden = false;
+      opcion.querySelector("input").checked = true;
+    });
+    actualizarSeleccion();
+  });
+
+  selector.querySelector('[data-period-action="clear"]').addEventListener("click", () => {
+    selector.querySelectorAll(".period-check-option input").forEach((entrada) => {
+      entrada.checked = false;
+    });
+    actualizarSeleccion();
+  });
+
+  selector.querySelector("#buscar-facultad-periodo").addEventListener("input", (evento) => {
+    const busqueda = normalizarIndicador(evento.target.value);
+    selector.querySelectorAll(".period-check-option").forEach((opcion) => {
+      opcion.hidden = !normalizarIndicador(opcion.dataset.facultad).includes(busqueda);
+    });
+  });
+
+  dibujarSeriesSeleccionadas(seriesOrdenadas, anios);
+}
+
+function dibujarSeriesSeleccionadas(seriesOrdenadas, anios) {
+  const contenedor = indicador$("periodos-chart");
+  const seleccionadas = seriesOrdenadas.filter((linea) =>
+    seriesPeriodoSeleccionadas.includes(linea.nombre)
+  );
+
+  if (!seleccionadas.length) {
+    contenedor.innerHTML = `
+      <div class="period-chart-empty">
+        <span class="material-symbols-outlined">query_stats</span>
+        <strong>Selecciona al menos una facultad</strong>
+        <p>Marca una o más facultades en el panel izquierdo para visualizar su evolución.</p>
+      </div>`;
+    return;
+  }
+
+  const width = 920;
+  const height = 390;
+  const margin = { top: 24, right: 24, bottom: 62, left: 72 };
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const maxValue = Math.max(
+    ...seleccionadas.flatMap((linea) =>
+      (linea.puntos || []).map((p) => Number(p.total || 0))
+    ),
+    1
+  );
+  const colors = [
+    "#0876ea", "#7553e8", "#0db28b", "#f59e0b", "#f04eaf",
+    "#14a3b8", "#315bdc", "#8b5cf6", "#64748b", "#e76f51"
+  ];
+  const x = (index) => margin.left + (anios.length <= 1 ? plotWidth / 2 : index * plotWidth / (anios.length - 1));
+  const y = (value) => margin.top + plotHeight - (value / maxValue) * plotHeight;
+  const tickStep = Math.max(1, Math.ceil(anios.length / 9));
+
+  contenedor.innerHTML = `
+    <div class="period-chart-topline">
+      <div><strong>Evolución histórica</strong><span>${seleccionadas.length} facultad${seleccionadas.length === 1 ? "" : "es"} seleccionada${seleccionadas.length === 1 ? "" : "s"}</span></div>
+      <span class="period-chart-unit">Ingresantes por año</span>
+    </div>
+    <div class="period-chart-canvas">
+      <svg class="period-line" viewBox="0 0 ${width} ${height}" role="img"
+        aria-label="Evolución histórica de ingresos por facultad">
+        ${[0, 1, 2, 3, 4].map((tick) => {
+          const value = maxValue * tick / 4;
+          const yy = y(value);
+          return `
+            <line class="period-gridline" x1="${margin.left}" y1="${yy}" x2="${width - margin.right}" y2="${yy}"/>
+            <text class="period-tick" x="${margin.left - 12}" y="${yy + 4}" text-anchor="end">${formatoNumero(value)}</text>`;
+        }).join("")}
+        ${seleccionadas.map((linea, serieIndex) => {
+          const color = colors[serieIndex % colors.length];
+          const points = anios.map((anio, index) => {
+            const point = (linea.puntos || []).find((item) =>
+              String(item.periodo).slice(0, 4) === String(anio)
+            );
+            return point && point.total !== null && point.total !== undefined
+              ? { x: x(index), y: y(Number(point.total)), value: Number(point.total), year: anio }
+              : null;
+          });
+          const segments = [];
+          let segment = [];
+          points.forEach((point) => {
+            if (!point) {
+              if (segment.length) segments.push(segment);
+              segment = [];
+            } else segment.push(point);
+          });
+          if (segment.length) segments.push(segment);
+
+          return `
+            ${segments.map((part) => `
+              <polyline class="period-series" stroke="${color}"
+                points="${part.map((point) => `${point.x},${point.y}`).join(" ")}"/>
+            `).join("")}
+            ${points.map((point) => point ? `
+              <circle class="period-point" cx="${point.x}" cy="${point.y}" r="4.2"
+                fill="${color}">
+                <title>${escaparIndicador(linea.nombre)} · ${escaparIndicador(point.year)}: ${formatoNumero(point.value)}</title>
+              </circle>` : "").join("")}`;
+        }).join("")}
+        ${anios.map((anio, index) => (
+          index % tickStep === 0 || index === anios.length - 1
+            ? `<text class="period-label" x="${x(index)}" y="${height - 22}" text-anchor="middle">${escaparIndicador(anio)}</text>`
+            : ""
+        )).join("")}
+      </svg>
+    </div>
+    <div class="period-legend">
+      ${seleccionadas.map((linea, index) => `
+        <span><i style="background:${colors[index % colors.length]}"></i>${escaparIndicador(linea.nombre)}</span>
+      `).join("")}
+    </div>`;
 }
 
 function filasSeleccionadas() {
@@ -584,6 +677,7 @@ async function generarTabla({ desplazar = true } = {}) {
     if (datos.tipo === "detalle") {
       if (!datos.filas?.length) {
         tabla.hidden = true;
+        indicador$("preview-empty")?.closest(".report-preview")?.classList.remove("has-results");
         estadoGrafico = null;
         mostrarMensajeIndicador("No hay registros con los filtros seleccionados.", "error");
         return;
@@ -591,6 +685,7 @@ async function generarTabla({ desplazar = true } = {}) {
       tabla.innerHTML = renderizarDetalle(datos);
       tabla.hidden = false;
       indicador$("grafico-indicador").hidden = true;
+      indicador$("preview-empty")?.closest(".report-preview")?.classList.add("has-results");
       estadoGrafico = null;
       mostrarMensajeIndicador(
         `Reporte detallado generado: ${formatoNumero(datos.total)} registros.`
@@ -604,6 +699,8 @@ async function generarTabla({ desplazar = true } = {}) {
     const metrica = datos.metrica;
     if (!filas.length) {
       tabla.hidden = true;
+      indicador$("preview-empty")?.closest(".report-preview")?.classList.remove("has-results");
+      indicador$("grafico-indicador").hidden = true;
       mostrarMensajeIndicador("No hay datos con los filtros seleccionados.", "error");
       return;
     }
@@ -625,6 +722,7 @@ async function generarTabla({ desplazar = true } = {}) {
       </table>
     `;
     tabla.hidden = false;
+    indicador$("preview-empty")?.closest(".report-preview")?.classList.add("has-results");
     dibujarGrafico(filas);
     mostrarMensajeIndicador(
       `Tabla generada correctamente: ${filas.length} categorías y ${formatoNumero(datos.total)} estudiantes.`
@@ -635,6 +733,8 @@ async function generarTabla({ desplazar = true } = {}) {
   } catch (error) {
     console.error("Error al generar tabla:", error);
     tabla.hidden = true;
+    indicador$("preview-empty")?.closest(".report-preview")?.classList.remove("has-results");
+    indicador$("grafico-indicador").hidden = true;
     mostrarMensajeIndicador(error.message || "No se pudo generar la tabla.", "error");
   }
 }
@@ -665,19 +765,44 @@ function pintarIndicadores(datos) {
     (total, fila) => total + Number(fila.total || 0),
     0,
   );
-  indicador$("genero-list").innerHTML = (datos.por_genero || []).map((fila, indice) => {
+  const generos = datos.por_genero || [];
+  let acumuladoGenero = 0;
+  const coloresGenero = ["#f04eaf", "#2b82ef", "#94a3b8", "#0db28b", "#f59e0b"];
+  const segmentosGenero = generos.map((fila, indice) => {
     const porcentaje = totalGeneros
       ? Number(fila.total || 0) / totalGeneros * 100
       : 0;
-    return `
-      <div class="gender-row">
-        <span class="gender-dot color-${indice % 2}"></span>
-        <span>${escaparIndicador(fila.nombre)}</span>
-        <strong>${formatoNumero(fila.total)}</strong>
-        <small>${porcentaje.toFixed(1)}%</small>
+    const inicio = acumuladoGenero;
+    acumuladoGenero += porcentaje;
+    return {
+      ...fila,
+      porcentaje,
+      color: coloresGenero[indice % coloresGenero.length],
+      inicio,
+      fin: acumuladoGenero,
+    };
+  });
+  const gradienteGenero = segmentosGenero.length
+    ? segmentosGenero.map((fila) =>
+        `${fila.color} ${fila.inicio}% ${fila.fin}%`).join(", ")
+    : "#dbe7f4 0% 100%";
+  indicador$("genero-list").innerHTML = `
+    <div class="gender-summary">
+      <div class="gender-donut" style="--gender-gradient:conic-gradient(${gradienteGenero})">
+        <strong>${formatoNumero(totalGeneros)}</strong>
       </div>
-    `;
-  }).join("");
+      <div class="gender-list">
+        ${segmentosGenero.map((fila) => `
+          <div class="gender-row">
+            <span class="gender-dot" style="background:${fila.color}"></span>
+            <span>${escaparIndicador(fila.nombre)}</span>
+            <strong>${formatoNumero(fila.total)}</strong>
+            <small>${fila.porcentaje.toFixed(1)}%</small>
+          </div>
+        `).join("") || '<span class="distribution-empty">Sin datos</span>'}
+      </div>
+    </div>
+  `;
   generarTabla({ desplazar: false });
 }
 

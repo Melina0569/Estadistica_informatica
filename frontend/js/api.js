@@ -212,6 +212,10 @@ const API = {
         return this.get("/api/correcciones/reporte-activo");
     },
 
+    descartarAnalisis() {
+        return this.post("/api/correcciones/descartar-analisis");
+    },
+
     guardarReporteValidacion(archivo, reporte) {
         return this.postJson("/api/correcciones/reporte-validacion", {
             archivo,

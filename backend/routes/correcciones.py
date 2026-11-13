@@ -66,6 +66,29 @@ def _carga_activa():
         .first()
     )
 
+ESTADOS_ACTIVOS = ("Analizada", "En corrección", "Apta")
+
+
+@correcciones_bp.post("/api/correcciones/descartar-analisis")
+def descartar_analisis():
+    try:
+        cargas = HistorialCarga.query.filter(
+            HistorialCarga.estado.in_(ESTADOS_ACTIVOS)
+        ).all()
+        for carga in cargas:
+            carga.estado = "Descartada"
+            carga.observaciones = "Análisis descartado por el usuario."
+        db.session.commit()
+        return jsonify({
+            "mensaje": "Análisis descartado.",
+            "descartadas": len(cargas),
+        })
+    except Exception as error:
+        db.session.rollback()
+        return jsonify({
+            "error": "No se pudo descartar el análisis.",
+            "detalle": str(error),
+        }), 500
 
 @correcciones_bp.get("/api/correcciones/reporte-activo")
 def reporte_activo():
@@ -244,6 +267,7 @@ def guardar_correccion_reporte():
     else:
         reporte.estado = "en_correccion"
         carga.estado = "En corrección"
+    carga.inconsistencias = reporte.total_inconsistencias
     db.session.commit()
     return jsonify({
         "mensaje": "Corrección pendiente guardada para el archivo.",
