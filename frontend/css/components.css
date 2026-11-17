@@ -541,6 +541,77 @@
     box-sizing: border-box;
 }
 
+/* =========================================
+   MARCA DE AGUA DEL RECTORADO
+========================================= */
+
+.sidebar-logo-center {
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+}
+
+.sidebar-logo-center::before {
+    content: "";
+    position: absolute;
+
+    /* Fotografía por encima del ícono */
+    width: 260px;
+    height: 160px;
+
+    left: 50%;
+    top: -105px;
+    transform: translateX(-50%);
+
+    z-index: 0;
+    pointer-events: none;
+
+    background-image:
+        linear-gradient(
+            180deg,
+            rgba(0, 75, 130, 0.30) 0%,
+            rgba(0, 80, 140, 0.42) 55%,
+            rgba(4, 65, 110, 0.85) 100%
+        ),
+        url("../assets/img/rectorado.png");
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    opacity: 0.85;
+    filter: saturate(0.85) contrast(1.05);
+
+    /* Integración con el fondo */
+    -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 15%,
+    rgba(0, 0, 0, 0.35) 28%,
+    black 45%,
+    black 75%,
+    rgba(0, 0, 0, 0.5) 90%,
+    transparent 100%
+    );
+
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        transparent 15%,
+        rgba(0, 0, 0, 0.35) 28%,
+        black 45%,
+        black 75%,
+        rgba(0, 0, 0, 0.5) 90%,
+        transparent 100%
+    );
+}
+
+/* Ícono por delante de la fotografía */
+.sidebar-logo-image {
+    position: relative;
+    z-index: 2;
+}
+
 /* Logo flotante */
 .sidebar-logo-image {
     position: relative;
