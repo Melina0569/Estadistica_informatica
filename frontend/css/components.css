@@ -188,6 +188,7 @@
   background: linear-gradient(135deg, #155f89 0%, #0c527d 58%, #08466f 100%);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 7px 16px rgba(0, 25, 65, .24);
 }
+
 .sidebar-periodo::after {
   position: absolute;
   right: -2.2rem;
@@ -199,6 +200,7 @@
   background: radial-gradient(circle, rgba(123, 212, 244, .2), transparent 68%);
   pointer-events: none;
 }
+
 .sidebar-periodo-icon {
   position: relative;
   z-index: 1;
@@ -213,6 +215,7 @@
   color: #f0fbff;
   font-size: 1.05rem;
 }
+
 .sidebar-periodo-content {
   position: relative;
   z-index: 1;
@@ -221,12 +224,14 @@
   flex-direction: column;
   align-items: flex-start;
 }
+
 .sidebar-periodo-label {
   color: #d6edf7;
   font: 700 .59rem/1 Inter, sans-serif;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+
 .sidebar-periodo-value {
   margin-top: .18rem;
   padding: 0;
@@ -237,12 +242,14 @@
   font: 800 .98rem/1.2 "JetBrains Mono", monospace;
   letter-spacing: -.02em;
 }
+
 .sidebar-periodo-value:hover { color: #d9f3ff; }
 .sidebar-periodo-value:focus-visible,
 .sidebar-periodo-action:focus-visible {
   outline: 2px solid #9de2ff;
   outline-offset: 3px;
 }
+
 .sidebar-periodo-action {
   display: inline-flex;
   align-items: center;
